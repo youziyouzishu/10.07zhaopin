@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>浏览页面</title>
+    <link rel="stylesheet" href="/app/admin/component/pear/css/pear.css" />
+    <link rel="stylesheet" href="/app/admin/admin/css/reset.css" />
+</head>
+<body class="pear-container">
+
+
+<div class="layui-card">
+    <div class="layui-card-body">
+
+        <div class="layui-tab layui-tab-brief">
+            <ul class="layui-tab-title">
+                <li class="layui-this">短信设置</li>
+                <li permission="app.email.admin.setting.test">短信测试</li>
+            </ul>
+            <div class="layui-tab-content">
+                <!-- 短信设置 -->
+                <div class="layui-tab-item layui-show">
+                    <form class="layui-form" onsubmit="return false" lay-filter="setting" style="width: 520px">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">短信宝账号</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="Username" required lay-verify="required" autocomplete="off" class="layui-input" placeholder="短信宝的登录账号">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">短信宝API KEY</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="Password" required lay-verify="required" autocomplete="off" class="layui-input" placeholder="不是密码，是API KEY">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">短信宝模板</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="Template" required lay-verify="required" autocomplete="off" class="layui-input" placeholder="【极易】您的验证码是{code}">
+                                <b>验证码使用 {code} 表示</b>
+                            </div>
+                        </div>
+<!--                        <div class="layui-form-item">-->
+<!--                            <label class="layui-form-label">验证码长度</label>-->
+<!--                            <div class="layui-input-block">-->
+<!--                                <input type="number" name="CodeLength" required lay-verify="required" autocomplete="off" class="layui-input" placeholder="建议4-6位" min="4" max="10">-->
+<!--                            </div>-->
+<!--                        </div>-->
+
+<!--                        <div class="layui-form-item">-->
+<!--                            <label class="layui-form-label">剩余短信条数</label>-->
+<!--                            <div class="layui-input-block">-->
+<!--                                <input type="text" name="UnUsedCount" autocomplete="off" class="layui-input" disabled>-->
+<!--                            </div>-->
+<!--                        </div>-->
+
+                        <div class="layui-form-item">
+                            <div class="layui-input-block">
+                                <button type="submit" class="pear-btn pear-btn-primary pear-btn-md" lay-submit="" lay-filter="saveSetting">
+                                    保存
+                                </button>
+                                <button type="reset" class="pear-btn pear-btn-md">
+                                    重置
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <!-- 短信测试 -->
+                <div class="layui-tab-item">
+                    <form class="layui-form" onsubmit="return false" lay-filter="test" style="width: 520px">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">接收号码</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="Phone" required lay-verify="required" autocomplete="off" class="layui-input" placeholder="接收人的手机号码">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-input-block">
+                                <button type="submit" class="pear-btn pear-btn-primary pear-btn-md" lay-submit="" lay-filter="sendSetting">
+                                    发送
+                                </button>
+                                <button type="reset" class="pear-btn pear-btn-md">
+                                    重置
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="/app/admin/component/layui/layui.js"></script>
+<script src="/app/admin/component/pear/pear.js"></script>
+<script src="/app/admin/admin/js/permission.js"></script>
+<script src="/app/admin/admin/js/common.js"></script>
+
+<!-- 配置设置 -->
+<script>
+    layui.use(["form", "popup"], function(){
+        let form = layui.form;
+        let $ = layui.jquery;
+
+        // 获取配置
+        $.ajax({
+            url: "/app/smsbao/admin/setting/get",
+            success: function (res) {
+                if (res.code) {
+                    return layui.popup.failure(res.msg);
+                }
+                form.val("setting", res.data);
+            }
+        });
+
+        // 查询余额
+        $.ajax({
+            url: "/app/smsbao/admin/setting/getMoney",
+            success: function (res) {
+                form.val("setting", res.data);
+            }
+        });
+
+        // 保存设置
+        form.on("submit(saveSetting)", function(data){
+            $.ajax({
+                url: "/app/smsbao/admin/setting/save",
+                dataType: "json",
+                type: "POST",
+                data: data.field,
+                success: function (res) {
+                    if (res.code) {
+                        return layui.popup.failure(res.msg);
+                    }
+                    form.val("test", data.field);
+                    return layui.popup.success("操作成功");
+                }
+            });
+            return false;
+        });
+
+        // 测试发送
+        form.on("submit(sendSetting)", function(data){
+            $.ajax({
+                url: "/app/smsbao/admin/setting/test",
+                dataType: "json",
+                type: "POST",
+                data: data.field,
+                success: function (res) {
+                    if (res.code) {
+                        return layui.popup.failure(res.msg);
+                    }
+                    form.val("test", data.field);
+                    return layui.popup.success("发送成功");
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<style>
+    .layui-input-block {
+        margin-left: 150px;
+    }
+    .layui-form-label {
+        width:120px;
+    }
+</style>
+</body>
+</html>
+

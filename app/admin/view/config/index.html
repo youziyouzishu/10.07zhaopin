@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <link rel="stylesheet" href="/app/admin/component/layui/css/layui.css?v=2.8.12" />
+    <link rel="stylesheet" href="/app/admin/component/pear/css/pear.css" />
+    <link rel="stylesheet" href="/app/admin/admin/css/reset.css" />
+</head>
+<body class="pear-container">
+<style>
+    .layui-input-block input {
+        width: 300px;
+    }
+</style>
+
+<div class="layui-card">
+    <div class="layui-card-body">
+
+        <div class="layui-tab layui-tab-brief">
+            <ul class="layui-tab-title">
+                <li class="layui-this">系统配置</li>
+                <!--                <li>代理配置</li>-->
+                <!--                <li>海报配置</li>-->
+                <!--                <li>团队配置</li>-->
+                <!--                <li>协议配置</li>-->
+                <!--                <li>奖品配置</li>-->
+            </ul>
+            <div class="layui-tab-content">
+
+                <!-- 系统配置 -->
+                <div class="layui-tab-item layui-show">
+
+                    <form class="layui-form" lay-filter="config">
+
+
+                        <div class="layui-form-item">
+                            <label class="layui-form-label required">用户协议</label>
+                            <div class="layui-input-block">
+                                <textarea id="user_agreement" name="user_agreement"   lay-verify="required" class="layui-textarea"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="layui-form-item">
+                            <label class="layui-form-label required">隐私政策</label>
+                            <div class="layui-input-block">
+                                <textarea id="privacy_policy" name="privacy_policy"  lay-verify="required" class="layui-textarea"></textarea>
+                            </div>
+                        </div>
+
+
+
+                        <div class="layui-form-item">
+                            <div class="layui-input-block">
+                                <button type="submit" class="pear-btn pear-btn-primary pear-btn-md" lay-submit="" lay-filter="saveConfig">
+                                    提交
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<script src="/app/admin/component/layui/layui.js?v=2.8.12"></script>
+<script src="/app/admin/component/pear/pear.js"></script>
+<script src="/app/admin/admin/js/permission.js"></script>
+<script>
+    layui.use(["tinymce"], function() {
+        var tinymce = layui.tinymce
+        var edit = tinymce.render({
+            elem: "#user_agreement",
+            value: "",
+            width:500,
+            convert_urls: false,
+            images_upload_handler: function (blobInfo, success, failure) {
+                // 创建一个表单数据对象
+                const formData = new FormData();
+                formData.append('file', blobInfo.blob(), blobInfo.filename());
+                // 使用AJAX上传图片
+                fetch('/app/admin/upload/image', { // 替换为你的上传API地址
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json()) // 假设服务器返回的是JSON
+                    .then(data => {
+                        // 假设返回的JSON中包含了图片的URL，这里需要根据实际返回数据结构修改
+                        let url = "https://1016kebao.62.hzgqapp.com" + data.data.url;
+                        console.log(url);
+                        success(url); // 回调success函数，将新的URL传递给TinyMCE
+                    })
+                    .catch(error => {
+                        failure('Upload failed: ' + error.message);
+                    });
+            },
+        });
+        edit.on("blur", function(){
+            layui.$("#user_agreement").val(edit.getContent());
+        });
+    });
+
+
+    layui.use(["tinymce"], function() {
+        var tinymce = layui.tinymce
+        var edit = tinymce.render({
+            elem: "#privacy_policy",
+            value: "",
+            width:500,
+            convert_urls: false,
+            images_upload_handler: function (blobInfo, success, failure) {
+                // 创建一个表单数据对象
+                const formData = new FormData();
+                formData.append('file', blobInfo.blob(), blobInfo.filename());
+                // 使用AJAX上传图片
+                fetch('/app/admin/upload/image', { // 替换为你的上传API地址
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json()) // 假设服务器返回的是JSON
+                    .then(data => {
+                        // 假设返回的JSON中包含了图片的URL，这里需要根据实际返回数据结构修改
+                        let url = "https://1016kebao.62.hzgqapp.com" + data.data.url;
+                        console.log(url);
+                        success(url); // 回调success函数，将新的URL传递给TinyMCE
+                    })
+                    .catch(error => {
+                        failure('Upload failed: ' + error.message);
+                    });
+            },
+        });
+        edit.on("blur", function(){
+            layui.$("#privacy_policy").val(edit.getContent());
+        });
+    });
+
+    // 基础设置
+    layui.use(["upload", "layer", "popup"], function() {
+        let $ = layui.$;
+        let form = layui.form;
+        // 提交
+        form.on("submit(saveConfig)", function(data){
+            $.ajax({
+                url: "/admin/config/update",
+                dataType: "json",
+                type: "POST",
+                data: data.field,
+                success: function (res) {
+                    if (res.code) {
+                        return layui.popup.failure(res.msg);
+                    }
+                    return layui.popup.success("操作成功");
+                }
+            });
+            return false;
+        });
+    });
+
+
+
+
+    layui.use(["form"], function () {
+        let form = layui.form;
+        let $ = layui.$;
+        $.ajax({
+            url: "/admin/config/get",
+            dataType: "json",
+            success: function (res) {
+                if (res.code) {
+                    return layui.popup.failure(res.msg);
+                }
+                form.val("config", res.data);
+            }
+        });
+
+    });
+
+</script>
+
+</body>
+</html>
