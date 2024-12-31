@@ -13,7 +13,7 @@
  */
 
 return [
-    'debug' => true,
+    'debug' => false,
     'controller_suffix' => 'Controller',
     'controller_reuse' => false,
     'public_path' => base_path('plugin' . DIRECTORY_SEPARATOR. 'admin' . DIRECTORY_SEPARATOR . 'public'),
