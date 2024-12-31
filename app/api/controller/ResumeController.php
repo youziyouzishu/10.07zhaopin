@@ -103,15 +103,15 @@ class ResumeController extends Base
         $defaultResume = Resume::where(['user_id' => $request->user_id, 'default' => 1])->first();#默认简历
         if (!empty($request->user_id) && !empty($defaultResume) && !empty($user_profile)) {
             //如果用户登录
-            $fulltimeSkill = $defaultResume->fulltimeSkill->pluck('name')->toArray();
-            $internshipSkill = $defaultResume->internshipSkill->pluck('name')->toArray();
-            $projectSkill = $defaultResume->projectSkill->pluck('name')->toArray();
-            $skill = $defaultResume->skill->pluck('name')->toArray();
-            $top_secret = $user_profile->top_secret;
-            $adult = $user_profile->adult;
-            $sponsorship = $user_profile->sponsorship;
-            $from_limitation = $user_profile->from_limitation;
-            $us_citizen = $user_profile->us_citizen;
+            $fulltimeSkill = $defaultResume->fulltimeSkill->pluck('name')->toArray(); #全职技能
+            $internshipSkill = $defaultResume->internshipSkill->pluck('name')->toArray();#实习技能
+            $projectSkill = $defaultResume->projectSkill->pluck('name')->toArray();#项目技能
+            $skill = $defaultResume->skill->pluck('name')->toArray();#技术栈
+            $top_secret = $user_profile->top_secret;#绝密权限
+            $adult = $user_profile->adult;#是否成人
+            $sponsorship = $user_profile->sponsorship;#是否签证支持
+            $from_limitation = $user_profile->from_limitation;#受限国家
+            $us_citizen = $user_profile->us_citizen;#美国公民
             $query
                 //绝密权限
                 ->when(function ($query) {
@@ -246,9 +246,11 @@ class ResumeController extends Base
                         $query->where('resume_id', $defaultResume->id);
                     });
                 })
+                //在线状态排序
                 ->with(['user' => function (Builder $builder) {
                     $builder->orderByDesc('online');
                 }])
+                //非必备技能排序
                 ->when(function (Builder $query) {
                     return $query->whereHas('niceSkill');
                 }, function (Builder $query) use ($skill) {
