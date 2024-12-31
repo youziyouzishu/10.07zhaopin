@@ -12,10 +12,21 @@
  * @license   http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
+use support\Response;
 use Webman\Route;
 
 
 
+
+
+Route::fallback(function () {
+    if (request()->header('accept') == 'application/json'){
+        throw new \Tinywan\ExceptionHandler\Exception\RouteNotFoundException();
+    }else{
+        return not_found();
+    }
+
+});
 
 
 
