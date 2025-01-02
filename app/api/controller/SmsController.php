@@ -28,7 +28,7 @@ class SmsController extends Base
         $event = $request->post("event");
         $event = $event ?: 'register';
 
-        if (!$mobile || !Validate::checkRule($mobile, 'mobile')) {
+        if (!$mobile) {
             return $this->fail('手机号不正确');
         }
         $last = Sms::getLast($mobile, $event);
@@ -80,7 +80,7 @@ class SmsController extends Base
         $event = $event ? $event : 'register';
         $captcha = $request->post("captcha");
 
-        if (!$mobile || !Validate::checkRule($mobile, 'mobile')) {
+        if (!$mobile) {
             return $this->fail('手机号不正确');
         }
         if ($event) {

@@ -84,7 +84,7 @@ class Ems extends Base
      */
     public static function send($email, $code = null, $event = 'default')
     {
-        $code = is_null($code) ? Util::numeric() : $code;
+        $code = is_null($code) ? Util::numeric(6) : $code;
         $ip = request()->getRealIp();
         $ems = self::create([
             'event' => $event,

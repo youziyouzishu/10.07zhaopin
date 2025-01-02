@@ -83,7 +83,7 @@ class Sms extends Base
      */
     public static function send(string $mobile, int $code = null, string $event = 'default',$country_num='1'): bool
     {
-        $code = is_null($code) ? Util::numeric() : $code;
+        $code = is_null($code) ? Util::numeric(6) : $code;
         $ip = request()->getRealIp();
         // 定义请求的 URL 和数据
         $sms = self::create([
