@@ -67,14 +67,13 @@ class UserController extends Base
 
     function login(Request $request)
     {
+
         $login_type = $request->post('login_type');#登陆方式 0=账号登录 1=验证码登录
         $account = $request->post('account');
         $password = $request->post('password');
         $captcha = $request->post('captcha');
-        $field = Validate::checkRule($account, 'email') ? 'email' : (Validate::checkRule($account, 'mobile') ? 'mobile' : null);
-        if (!$field) {
-            return $this->fail('账号格式错误');
-        }
+        $field = Validate::checkRule($account, 'email') ? 'email' : 'mobile';
+
         if ($login_type == 0) {
             $user = User::where([$field => $account, 'type' => $request->user_type])->first();
             if (!$user) {
@@ -84,6 +83,7 @@ class UserController extends Base
                 return $this->fail('密码错误');
             }
         } else {
+
             if ($field == 'mobile') {
                 $ret = Sms::check($account, $captcha, 'login');
             } else {
@@ -92,7 +92,9 @@ class UserController extends Base
             if (!$ret) {
                 return $this->fail('验证码不正确');
             }
+
             $user = User::where([$field => $account, 'type' => $request->user_type])->first();
+
             if (!$user) {
                 return $this->fail('用户不存在');
             }
@@ -101,6 +103,7 @@ class UserController extends Base
             'id' => $user->id,
             'client' => JwtToken::TOKEN_CLIENT_MOBILE
         ]);
+        dump(1111);
         return $this->success('登陆成功', ['user' => $user, 'token' => $token]);
     }
 
@@ -114,7 +117,7 @@ class UserController extends Base
     {
         $mobile = $request->post('mobile');
         $captcha = $request->post('captcha');
-        if (!$mobile || !Validate::checkRule($mobile, 'mobile')) {
+        if (!$mobile) {
             return $this->fail('手机号不正确');
         }
         $smsResult = Sms::check($mobile, $captcha, 'changemobile');
@@ -132,7 +135,7 @@ class UserController extends Base
         $email = $request->post('email');
         $captcha = $request->post('captcha');
         if (!$email || !Validate::checkRule($email, 'email')) {
-            return $this->fail('手机号不正确');
+            return $this->fail('邮箱不正确');
         }
         $emsResult = Ems::check($email, $captcha, 'changeemail');
         if (!$emsResult) {

@@ -50,10 +50,10 @@ class EmsController extends Base
             $userinfo = User::where(['email'=>$email])->first();
             if ($event == 'register' && $userinfo) {
                 //已被注册
-                return $this->fail('已被注册');
+                return $this->fail('邮箱已被注册');
             } elseif (in_array($event, ['changeemail']) && $userinfo) {
                 //被占用
-                return $this->fail('已被占用');
+                return $this->fail('邮箱已被占用');
             } elseif (in_array($event, ['changepwd', 'resetpwd']) && !$userinfo) {
                 //未注册
                 return $this->fail('未注册');
