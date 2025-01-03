@@ -292,7 +292,7 @@ class ResumeController extends Base
     #获取简历列表
     function getResumeList(Request $request)
     {
-        $rows = Resume::with(['skill'])->where(['user_id' => $request->user_id])->get();
+        $rows = Resume::with(['skill','user'])->where(['user_id' => $request->user_id])->get();
         return $this->success('成功', $rows);
     }
 
@@ -348,6 +348,13 @@ class ResumeController extends Base
         $full_time_experience = $request->post('full_time_experience');#全职背景
         $internship_experience = $request->post('internship_experience');#实习背景
         $skill = $request->post('skill');#技术栈[{"name":"xxx"}]
+        if (empty($file)){
+            return $this->fail('请上传简历附件');
+        }
+        $row = Resume::where(['user_id' => $request->user_id,'name'=>$name])->first();
+        if($row){
+            return $this->fail('简历名称不能重复');
+        }
         DB::connection('plugin.admin.mysql')->beginTransaction();
         try {
             $resume = Resume::create([
@@ -366,6 +373,16 @@ class ResumeController extends Base
             ];
             $top_degree = new Collection();
             foreach ($educational_background as $experience) {
+                $cumulative_gpa = $experience['cumulative_gpa'];
+                if ($cumulative_gpa > 4 || $cumulative_gpa < 0) {
+                    throw new \Exception("总绩点必须在0-4之间");
+                }
+                $enrollment_date = $experience['enrollment_date'];
+                $graduation_date = $experience['graduation_date'];
+                if (strtotime($graduation_date) <= strtotime($enrollment_date)) {
+                    throw new \Exception("毕业时间必须大于入学时间");
+                }
+
                 $university = University::find($experience['university_id']);
                 if (!$university) {
                     throw new \Exception('学校不存在');
@@ -422,6 +439,11 @@ class ResumeController extends Base
             }
             // 创建项目经验和关联的技能
             foreach ($project_experience as $experience) {
+                $project_start_date = $experience['project_start_date'];
+                $project_end_date = $experience['project_end_date'];
+                if (strtotime($project_end_date) <= strtotime($project_start_date)) {
+                    throw new \Exception("项目结束日期必须大于项目开始日期");
+                }
                 $project = $resume->projectExperience()->create($experience);
                 if (isset($experience['skill'])) {
                     $project->skill()->createMany($experience['skill']);
@@ -465,6 +487,11 @@ class ResumeController extends Base
 
             // 创建实习经验和关联的技能
             foreach ($internship_experience as $experience) {
+                $start_date = $experience['start_date'];
+                $end_date = $experience['end_date'];
+                if (strtotime($end_date) <= strtotime($start_date)) {
+                    throw new \Exception("实习结束日期必须大于实习开始日期");
+                }
                 $internship = $resume->internshipExperience()->create($experience);
                 if (isset($experience['skill'])) {
                     $internship->skill()->createMany($experience['skill']);
@@ -495,7 +522,17 @@ class ResumeController extends Base
         $project_experience = $request->post('project_experience');#项目背景
         $full_time_experience = $request->post('full_time_experience');#全职背景
         $internship_experience = $request->post('internship_experience');#实习背景
+        if (empty($file)){
+            return $this->fail('请上传简历附件');
+        }
         $resume = Resume::find($resume_id);
+        if (!$resume){
+            return $this->fail('简历不存在');
+        }
+        $row = Resume::where(['user_id' => $request->user_id,'name'=>$name])->first();
+        if($row){
+            return $this->fail('简历名称不能重复');
+        }
 
         DB::connection('plugin.admin.mysql')->beginTransaction();
         try {
@@ -518,6 +555,15 @@ class ResumeController extends Base
             ];
             $top_degree = new Collection();
             foreach ($educational_background as $experience) {
+                $cumulative_gpa = $experience['cumulative_gpa'];
+                if ($cumulative_gpa > 4 || $cumulative_gpa < 0) {
+                    throw new \Exception("总绩点必须在0-4之间");
+                }
+                $enrollment_date = $experience['enrollment_date'];
+                $graduation_date = $experience['graduation_date'];
+                if (strtotime($graduation_date) <= strtotime($enrollment_date)) {
+                    throw new \Exception("毕业时间必须大于入学时间");
+                }
                 $university = University::find($experience['university_id']);
                 if (!$university) {
                     throw new \Exception('学校不存在');
@@ -574,6 +620,11 @@ class ResumeController extends Base
             }
             // 创建项目经验和关联的技能
             foreach ($project_experience as $experience) {
+                $project_start_date = $experience['project_start_date'];
+                $project_end_date = $experience['project_end_date'];
+                if (strtotime($project_end_date) <= strtotime($project_start_date)) {
+                    throw new \Exception("项目结束日期必须大于项目开始日期");
+                }
                 $project = $resume->projectExperience()->create($experience);
                 if (isset($experience['skill'])) {
                     $project->skill()->createMany($experience['skill']);
@@ -617,6 +668,11 @@ class ResumeController extends Base
 
             // 创建实习经验和关联的技能
             foreach ($internship_experience as $experience) {
+                $start_date = $experience['start_date'];
+                $end_date = $experience['end_date'];
+                if (strtotime($end_date) <= strtotime($start_date)) {
+                    throw new \Exception("实习结束日期必须大于实习开始日期");
+                }
                 $internship = $resume->internshipExperience()->create($experience);
                 if (isset($experience['skill'])) {
                     $internship->skill()->createMany($experience['skill']);

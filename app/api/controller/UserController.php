@@ -21,6 +21,7 @@ class UserController extends Base
     function register(Request $request)
     {
         $name = $request->post('name');
+        $middle_name = $request->post('middle_name');
         $last_name = $request->post('last_name');
         $email = $request->post('email');
         $email_code = $request->post('email_code');
@@ -40,12 +41,18 @@ class UserController extends Base
         if (!$smsResult) {
             return $this->fail('手机验证码不正确');
         }
+        $has = User::where(['email' => $email, 'mobile' => $mobile, 'type' => $request->user_type == 0 ? 1 : 0])->first();
+        if ($has){
+            //如果有对应端用户，则删除
+            $has->delete();
+        }
         $user = User::where(['email' => $email, 'mobile' => $mobile, 'type' => $request->user_type])->first();
         if ($user) {
             return $this->fail('用户已存在');
         }
         $user = User::create([
             'nickname' => $name . $last_name,
+            'middle_name'=> $middle_name,
             'avatar' => '/avatar.png',
             'email' => $email,
             'mobile' => $mobile,
@@ -103,7 +110,6 @@ class UserController extends Base
             'id' => $user->id,
             'client' => JwtToken::TOKEN_CLIENT_MOBILE
         ]);
-        dump(1111);
         return $this->success('登陆成功', ['user' => $user, 'token' => $token]);
     }
 
@@ -151,7 +157,7 @@ class UserController extends Base
     {
         $newpassword = $request->post('newpassword');
         $password_confirm = $request->post('password_confirm');
-        if ($newpassword !== $password_confirm){
+        if ($newpassword !== $password_confirm) {
             return $this->fail('两次密码不一致');
         }
         $user = User::find($request->user_id);
@@ -247,8 +253,6 @@ class UserController extends Base
         $sign = $api->genUserSig($request->user_id);
         return $this->success('获取成功', ['sign' => $sign]);
     }
-
-
 
 
 }

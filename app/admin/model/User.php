@@ -2,6 +2,7 @@
 
 namespace app\admin\model;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use plugin\admin\app\model\Base;
 
 
@@ -46,10 +47,16 @@ use plugin\admin\app\model\Base;
  * @property int $notice_type 通知类型:0=邮箱通知,1=短信通知
  * @property int $vip_status 会员状态:0=未开通,1=已开通
  * @property int $show_status 展示简历状态:0=否=false,1=是=true
+ * @property \Illuminate\Support\Carbon|null $deleted_at 删除时间
+ * @property string $middle_name 中间名
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
  * @mixin \Eloquent
  */
 class User extends Base
 {
+    use SoftDeletes;
     /**
      * The table associated with the model.
      *
@@ -85,6 +92,17 @@ class User extends Base
         'name',
         'last_name',
         'hr_type',
+        'country_num',
+        'online',
+        'company_name',
+        'position',
+        'company_explain',
+        'salutation',
+        'vip_expire_at',
+        'notice_type',
+        'vip_status',
+        'show_status',
+        'middle_name',
     ];
 
     function profile()

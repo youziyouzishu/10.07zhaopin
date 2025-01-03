@@ -41,7 +41,7 @@ class CommonController extends Base
     {
         $keyword = $request->post('keyword');
         $rows = Major::when(!empty($keyword), function (Builder $builder) use ($keyword) {
-            $builder->where('name', 'like', '%' . $keyword . '%');
+            $builder->whereRaw('LOWER(name) like ?', ['%' . strtolower($keyword) . '%']);
         })->limit(10)->get();
         return $this->success('成功', $rows);
     }
@@ -51,7 +51,7 @@ class CommonController extends Base
     {
         $keyword = $request->post('keyword');
         $rows = Company::when(!empty($keyword), function (Builder $builder) use ($keyword) {
-            $builder->where('name', 'like', '%' . $keyword . '%');
+            $builder->whereRaw('LOWER(name) like ?', ['%' . strtolower($keyword) . '%']);
         })->limit(10)->get();
         return $this->success('成功', $rows);
     }
@@ -60,7 +60,7 @@ class CommonController extends Base
     {
         $keyword = $request->post('keyword');
         $rows = University::when(!empty($keyword), function (Builder $builder) use ($keyword) {
-            $builder->where('name', 'like', '%' . $keyword . '%');
+            $builder->whereRaw('LOWER(name) like ?', ['%' . strtolower($keyword) . '%']);
         })->limit(10)->get();
         return $this->success('成功', $rows);
     }
