@@ -79,8 +79,13 @@ class UserController extends Base
         $account = $request->post('account');
         $password = $request->post('password');
         $captcha = $request->post('captcha');
-        $field = Validate::checkRule($account, 'email') ? 'email' : 'mobile';
-
+        if (filter_var($account, FILTER_VALIDATE_EMAIL)){
+            $field = 'email';
+        }elseif (preg_match('/^[0-9]{10}$/', $account)){
+            $field = 'mobile';
+        }else{
+            return $this->fail('账号格式不正确');
+        }
         if ($login_type == 0) {
             $user = User::where([$field => $account, 'type' => $request->user_type])->first();
             if (!$user) {
@@ -189,6 +194,7 @@ class UserController extends Base
     function saveProfile(Request $request)
     {
         $last_name = $request->post('last_name');
+        $middle_name = $request->post('middle_name');
         $name = $request->post('name');
         $adult = $request->post('adult');
         $top_secret = $request->post('top_secret');
@@ -227,6 +233,7 @@ class UserController extends Base
         $profile->country = $country;
         $profile->postal_code = $postal_code;
         $profile->us_citizen = $us_citizen;
+        $profile->middle_name = $middle_name;
         $profile->save();
         return $this->success('保存成功');
     }

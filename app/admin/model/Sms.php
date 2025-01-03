@@ -96,6 +96,7 @@ class Sms extends Base
             $response = Smsbao::send('+'.$country_num.$mobile,$code);
             $response = $response->rawBody();
             $ret = json_decode($response);
+            dump($ret);
             if ($ret->code != 0) {
                 return false;
             }

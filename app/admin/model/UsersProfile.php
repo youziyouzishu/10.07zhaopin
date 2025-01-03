@@ -25,6 +25,7 @@ use plugin\admin\app\model\Base;
  * @property string $city 城市
  * @property string $country 国家
  * @property string $postal_code 邮政编码
+ * @property string $middle_name 中间名
  * @property int $us_citizen 美国公民:0=false=否,1=true=是
  * @property \Illuminate\Support\Carbon|null $created_at 创建时间
  * @property \Illuminate\Support\Carbon|null $updated_at 更新时间

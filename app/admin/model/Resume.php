@@ -3,6 +3,7 @@
 namespace app\admin\model;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Traits\EnumeratesValues;
 use plugin\admin\app\model\Base;
@@ -41,11 +42,16 @@ use plugin\admin\app\model\Base;
  * @property int $total_internship_experience_number 实习段数
  * @property int $top_degree 最高学历:0=High School or Below=高中及以下,1=Associate Degree=副学士学位,2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位
  * @property-read mixed $top_degree_text
+ * @property \Illuminate\Support\Carbon|null $deleted_at 删除时间
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Resume onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Resume withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Resume withoutTrashed()
  * @mixin \Eloquent
  */
 class Resume extends Base
 {
 
+    use SoftDeletes;
     /**
      * The table associated with the model.
      *

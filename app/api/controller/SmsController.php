@@ -13,7 +13,7 @@ use Tinywan\Validate\Facade\Validate;
 class SmsController extends Base
 {
 
-    protected $noNeedLogin = ['send','check'];
+    protected $noNeedLogin = ['send', 'check'];
 
     /**
      * 发送验证码
@@ -22,15 +22,16 @@ class SmsController extends Base
      * @param string $mobile 手机号
      * @param string $event 事件名称
      */
-    public function send(Request $request):Response
+    public function send(Request $request): Response
     {
         $mobile = $request->post("mobile");
         $event = $request->post("event");
         $event = $event ?: 'register';
 
-        if (!$mobile) {
+        if (!$mobile || !preg_match('/^[0-9]{10}$/', $mobile)) {
             return $this->fail('手机号不正确');
         }
+
         $last = Sms::getLast($mobile, $event);
 
         if ($last && time() - $last->created_at->timestamp < 60) {
@@ -44,7 +45,7 @@ class SmsController extends Base
             return $this->fail('发送频繁');
         }
         if ($event) {
-            $userinfo = User::where(['mobile'=>$mobile,'type'=>$request->user_type])->first();
+            $userinfo = User::where(['mobile' => $mobile, 'type' => $request->user_type])->first();
             if ($event == 'register' && $userinfo) {
                 //已被注册
                 return $this->fail('手机号已被注册');
@@ -80,11 +81,11 @@ class SmsController extends Base
         $event = $event ? $event : 'register';
         $captcha = $request->post("captcha");
 
-        if (!$mobile) {
+        if (!$mobile || !preg_match('/^[0-9]{10}$/', $mobile)) {
             return $this->fail('手机号不正确');
         }
         if ($event) {
-            $userinfo = User::where(['mobile'=>$mobile])->first();
+            $userinfo = User::where(['mobile' => $mobile])->first();
             if ($event == 'register' && $userinfo) {
                 //已被注册
                 return $this->fail('已被注册');

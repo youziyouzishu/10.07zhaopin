@@ -511,6 +511,17 @@ class ResumeController extends Base
         return $this->success();
     }
 
+    function deleteResume(Request $request)
+    {
+        $resume_id = $request->post('resume_id');
+        $row = Resume::find($resume_id);
+        if (!$row){
+            return $this->fail('简历不存在');
+        }
+        $row->delete();
+        return $this->success();
+    }
+
 
     function editResume(Request $request)
     {
@@ -782,6 +793,9 @@ class ResumeController extends Base
         $rows = SendLog::withTrashed()->whereIn('resume_id', $resumeList->pluck('id'))->orderBy('id', 'desc')->paginate()->items();
         return $this->success('成功', $rows);
     }
+
+
+ 
 
 
 }
