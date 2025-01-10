@@ -42,7 +42,7 @@ class UserController extends Base
             return $this->fail('手机验证码不正确');
         }
         $has = User::where(['email' => $email, 'mobile' => $mobile, 'type' => $request->user_type == 0 ? 1 : 0])->first();
-        if ($has){
+        if ($has) {
             //如果有对应端用户，则删除
             $has->delete();
         }
@@ -52,7 +52,7 @@ class UserController extends Base
         }
         $user = User::create([
             'nickname' => $name . $last_name,
-            'middle_name'=> $middle_name,
+            'middle_name' => $middle_name,
             'avatar' => '/avatar.png',
             'email' => $email,
             'mobile' => $mobile,
@@ -64,6 +64,7 @@ class UserController extends Base
             'last_name' => $last_name,
             'password' => Util::passwordHash($password),
             'type' => $request->user_type,
+            'hr_type' => $request->user_type == 0 ? 0 : 1
         ]);
         $token = JwtToken::generateToken([
             'id' => $user->id,
@@ -79,11 +80,11 @@ class UserController extends Base
         $account = $request->post('account');
         $password = $request->post('password');
         $captcha = $request->post('captcha');
-        if (filter_var($account, FILTER_VALIDATE_EMAIL)){
+        if (filter_var($account, FILTER_VALIDATE_EMAIL)) {
             $field = 'email';
-        }elseif (preg_match('/^[0-9]{10}$/', $account)){
+        } elseif (preg_match('/^[0-9]{10}$/', $account)) {
             $field = 'mobile';
-        }else{
+        } else {
             return $this->fail('账号格式不正确');
         }
         if ($login_type == 0) {
@@ -121,7 +122,7 @@ class UserController extends Base
     function getUserInfo(Request $request)
     {
         $row = User::with(['profile'])->find($request->user_id);
-        return $this->success('获取成功', $row);
+        return $this->success('成功', $row);
     }
 
     function changeMobile(Request $request)
@@ -188,7 +189,7 @@ class UserController extends Base
             }
         }
         $row->save();
-        return $this->success('修改成功');
+        return $this->success('成功');
     }
 
     function saveProfile(Request $request)
@@ -235,7 +236,7 @@ class UserController extends Base
         $profile->us_citizen = $us_citizen;
         $profile->middle_name = $middle_name;
         $profile->save();
-        return $this->success('保存成功');
+        return $this->success('成功');
     }
 
     function report(Request $request)
@@ -251,14 +252,14 @@ class UserController extends Base
             'explain' => $explain,
             'images' => $images,
         ]);
-        return $this->success('举报成功');
+        return $this->success('成功');
     }
 
     function getTLSSig(Request $request)
     {
         $api = new TLSSigAPIv2(1600067517, '8f00cb63054ab6d5516bd15bc7c770db18db105c3fe7bbbe4e78cd3fbfb129e7'); // 替换为实际AppID和密钥
         $sign = $api->genUserSig($request->user_id);
-        return $this->success('获取成功', ['sign' => $sign]);
+        return $this->success('成功', ['sign' => $sign]);
     }
 
 

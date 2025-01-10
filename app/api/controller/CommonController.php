@@ -9,6 +9,7 @@ use app\admin\model\Major;
 use app\admin\model\Province;
 use app\admin\model\Skill;
 use app\admin\model\University;
+use app\admin\model\Vip;
 use app\api\basic\Base;
 use Illuminate\Database\Eloquent\Builder;
 use plugin\admin\app\model\Option;
@@ -25,7 +26,7 @@ class CommonController extends Base
         $name = $request->post('name');
         if ($name == 'United States'){
             $rows = Province::when(!empty($keyword), function (Builder $builder) use ($keyword) {
-                $builder->whereRaw('LOWER(name) LIKE LOWER(?)', ['%' . $keyword . '%']);
+                $builder->whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
             })->get();
         }else{
             $rows = [];
@@ -37,7 +38,7 @@ class CommonController extends Base
     {
         $keyword = $request->post('keyword');
         $rows = Country::when(!empty($keyword), function (Builder $builder) use ($keyword) {
-            $builder->whereRaw('LOWER(name) LIKE LOWER(?)', ['%' . $keyword . '%']);
+            $builder->whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
         })->limit(10)->get();
         return $this->success('成功', $rows);
     }
@@ -46,7 +47,7 @@ class CommonController extends Base
     {
         $keyword = $request->post('keyword');
         $rows = Major::when(!empty($keyword), function (Builder $builder) use ($keyword) {
-            $builder->whereRaw('LOWER(name) LIKE LOWER(?)', ['%' . $keyword . '%']);
+            $builder->whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
         })->limit(10)->get();
         return $this->success('成功', $rows);
     }
@@ -56,16 +57,16 @@ class CommonController extends Base
     {
         $keyword = $request->post('keyword');
         $rows = Company::when(!empty($keyword), function (Builder $builder) use ($keyword) {
-            $builder->whereRaw('LOWER(name) LIKE LOWER(?)', ['%' . $keyword . '%']);
+            $builder->whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
         })->limit(10)->get();
-        return $this->success('成功', $rows);
+        return $this->success(trans('success'), $rows);
     }
 
     function getUniversityList(Request $request)
     {
         $keyword = $request->post('keyword');
         $rows = University::when(!empty($keyword), function (Builder $builder) use ($keyword) {
-            $builder->whereRaw('LOWER(name) LIKE LOWER(?)', ['%' . $keyword . '%']);
+            $builder->whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
         })->limit(10)->get();
         return $this->success('成功', $rows);
     }
@@ -74,7 +75,7 @@ class CommonController extends Base
     {
         $keyword = $request->post('keyword');
         $rows = Skill::when(!empty($keyword), function (Builder $builder) use ($keyword) {
-            $builder->whereRaw('LOWER(name) LIKE LOWER(?)', ['%' . $keyword . '%']);
+            $builder->whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
         })->limit(10)->get();
         return $this->success('成功', $rows);
     }
@@ -91,6 +92,16 @@ class CommonController extends Base
     function getBannerList()
     {
         $rows = Banner::orderByDesc('weigh')->get();
+        return $this->success('成功', $rows);
+    }
+
+    #获取会员价格列表
+    function getVipList(Request $request)
+    {
+        $type = $request->post('type');#类型:0=求职端,1=招聘端
+        $rows = Vip::when(!empty($type)|| $type==0, function (Builder $builder) use ($type) {
+            $builder->where('type',$type);
+        });
         return $this->success('成功', $rows);
     }
 

@@ -52,9 +52,9 @@ class SmsController extends Base
             } elseif ($event == 'changemobile' && $userinfo) {
                 //被占用
                 return $this->fail('手机号已被占用');
-            } elseif (in_array($event, ['changepwd', 'resetpwd']) && !$userinfo) {
+            } elseif (in_array($event, ['login','changepwd', 'resetpwd']) && !$userinfo) {
                 //未注册
-                return $this->fail('未注册');
+                return $this->fail('该手机号未注册');
             }
         }
 
@@ -88,13 +88,13 @@ class SmsController extends Base
             $userinfo = User::where(['mobile' => $mobile])->first();
             if ($event == 'register' && $userinfo) {
                 //已被注册
-                return $this->fail('已被注册');
+                return $this->fail('手机号已被注册');
             } elseif ($event == 'changemobile' && $userinfo) {
                 //被占用
-                return $this->fail('已被占用');
+                return $this->fail('手机号已被占用');
             } elseif (in_array($event, ['changepwd', 'resetpwd']) && !$userinfo) {
                 //未注册
-                return $this->fail('未注册');
+                return $this->fail('该手机号未注册');
             }
         }
         $ret = Sms::check($mobile, $captcha, $event);

@@ -14,7 +14,6 @@ class ApiAuth implements MiddlewareInterface
     public function process(Request|\Webman\Http\Request $request, callable $handler) : Response
     {
         $user_type = $request->header('user-type');
-
         if (!in_array($user_type,[0,1])){
             return json(['code' => 0, 'msg' => '非法访问', 'data' => []]);
         }

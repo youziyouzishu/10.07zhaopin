@@ -34,7 +34,7 @@ class ResumeController extends Base
         $province = $request->post('province', '');#所属州
         $position_type = $request->post('position_type', '');#工作类型
         $work_mode = $request->post('work_mode', '');#工作模式:0=In-Person=现场办公,1=Hybrid=混合办公,2=Remote=远程办公
-        $keyword = $request->post('keyword', '');
+        $keyword = $request->post('keyword', '');#关键词
         try {
             $request->user_id = JwtToken::getCurrentId();
         } catch (JwtTokenException $e) {
@@ -95,24 +95,13 @@ class ResumeController extends Base
                 $query->where('work_mode', $work_mode);
             });
         $user = User::find($request->user_id); #个人信息
-        if (!empty($user)) {
-            $user_profile = $user->profile;
-        } else {
-            $user_profile = null;
-        }
-        $defaultResume = Resume::where(['user_id' => $request->user_id, 'default' => 1])->first();#默认简历
-        if (!empty($request->user_id) && !empty($defaultResume) && !empty($user_profile)) {
-            //如果用户登录
-            $fulltimeSkill = $defaultResume->fulltimeSkill->pluck('name')->toArray(); #全职技能
-            $internshipSkill = $defaultResume->internshipSkill->pluck('name')->toArray();#实习技能
-            $projectSkill = $defaultResume->projectSkill->pluck('name')->toArray();#项目技能
-            $skill = $defaultResume->skill->pluck('name')->toArray();#技术栈
-            $top_secret = $user_profile->top_secret;#绝密权限
-            $adult = $user_profile->adult;#是否成人
-            $sponsorship = $user_profile->sponsorship;#是否签证支持
-            $from_limitation = $user_profile->from_limitation;#受限国家
-            $us_citizen = $user_profile->us_citizen;#美国公民
-            $query
+        if (!empty($user) && !empty($user->profile)) {
+            $top_secret = $user->profile->top_secret;#绝密权限
+            $adult = $user->profile->adult;#是否成人
+            $sponsorship = $user->profile->sponsorship;#是否签证支持
+            $from_limitation = $user->profile->from_limitation;#受限国家
+            $us_citizen = $user->profile->us_citizen;#美国公民
+            $query = $query
                 //绝密权限
                 ->when(function ($query) {
                     return $query->where('top_secret', 1);
@@ -140,7 +129,17 @@ class ResumeController extends Base
                     return $query->where('us_citizen', 1);
                 }, function (Builder $query) use ($us_citizen) {
                     return $query->where('us_citizen', $us_citizen);
-                })
+                });
+        }
+        $defaultResume = Resume::where(['user_id' => $request->user_id, 'default' => 1])->first();#默认简历
+
+        if (!empty($defaultResume)) {
+            //如果用户登录
+            $fulltimeSkill = $defaultResume->fulltimeSkill->pluck('name')->toArray(); #全职技能
+            $internshipSkill = $defaultResume->internshipSkill->pluck('name')->toArray();#实习技能
+            $projectSkill = $defaultResume->projectSkill->pluck('name')->toArray();#项目技能
+            $skill = $defaultResume->skill->pluck('name')->toArray();#技术栈
+            $query
                 //技术栈筛选
                 ->when(function (Builder $query) {
                     return $query->whereHas('skill');
@@ -162,7 +161,6 @@ class ResumeController extends Base
                     $majorGpaRequirement = $query->value('major_gpa_requirement');
                     $degreeQsRanking = $query->value('degree_qs_ranking');
                     $degreeUsRanking = $query->value('degree_us_ranking');
-
                     // 筛选出符合的教育背景
                     $filteredEducationalBackground = $defaultResume->educationalBackground->filter(function ($item) use ($degreeRequirements, $overallGpaRequirement, $majorGpaRequirement, $degreeQsRanking, $degreeUsRanking, $query) {
                         $qsCondition = ($degreeQsRanking == 0) || ($item->top_qs_ranking <= $degreeQsRanking && $item->top_qs_ranking != 0);
@@ -261,7 +259,7 @@ class ResumeController extends Base
                 })
                 ->orderByDesc('updated_at');
         }
-        $rows = $query->paginate()->items();
+        $rows = $query->paginate();
         return $this->success('成功', ['list' => $rows, 'company' => $company]);
     }
 
@@ -285,14 +283,14 @@ class ResumeController extends Base
             'resume_id' => $defaultResume->id,
             'job_id' => $job_id
         ]);
-        return $this->success();
+        return $this->success('成功');
     }
 
 
     #获取简历列表
     function getResumeList(Request $request)
     {
-        $rows = Resume::with(['skill','user'])->where(['user_id' => $request->user_id])->get();
+        $rows = Resume::with(['skill', 'user'])->where(['user_id' => $request->user_id])->get();
         return $this->success('成功', $rows);
     }
 
@@ -328,7 +326,7 @@ class ResumeController extends Base
         Resume::where(['user_id' => $request->user_id])->update(['default' => 0]);
         $row->default = 1;
         $row->save();
-        return $this->success();
+        return $this->success('成功');
     }
 
     #获取默认简历
@@ -348,11 +346,11 @@ class ResumeController extends Base
         $full_time_experience = $request->post('full_time_experience');#全职背景
         $internship_experience = $request->post('internship_experience');#实习背景
         $skill = $request->post('skill');#技术栈[{"name":"xxx"}]
-        if (empty($file)){
+        if (empty($file)) {
             return $this->fail('请上传简历附件');
         }
-        $row = Resume::where(['user_id' => $request->user_id,'name'=>$name])->first();
-        if($row){
+        $row = Resume::where(['user_id' => $request->user_id, 'name' => $name])->first();
+        if ($row) {
             return $this->fail('简历名称不能重复');
         }
         DB::connection('plugin.admin.mysql')->beginTransaction();
@@ -373,7 +371,8 @@ class ResumeController extends Base
             ];
             $top_degree = new Collection();
             foreach ($educational_background as $experience) {
-                $cumulative_gpa = $experience['cumulative_gpa'];
+                $cumulative_gpa = $experience['cumulative_gpa'] ?? 0;
+
                 if ($cumulative_gpa > 4 || $cumulative_gpa < 0) {
                     throw new \Exception("总绩点必须在0-4之间");
                 }
@@ -508,18 +507,21 @@ class ResumeController extends Base
             DB::connection('plugin.admin.mysql')->rollBack();
             return $this->fail($e->getMessage());
         }
-        return $this->success();
+        return $this->success('成功');
     }
 
     function deleteResume(Request $request)
     {
         $resume_id = $request->post('resume_id');
         $row = Resume::find($resume_id);
-        if (!$row){
+        if (!$row) {
             return $this->fail('简历不存在');
         }
+        if ($row->default == 1) {
+            return $this->success('成功');
+        }
         $row->delete();
-        return $this->success();
+        return $this->success('成功');
     }
 
 
@@ -533,15 +535,15 @@ class ResumeController extends Base
         $project_experience = $request->post('project_experience');#项目背景
         $full_time_experience = $request->post('full_time_experience');#全职背景
         $internship_experience = $request->post('internship_experience');#实习背景
-        if (empty($file)){
+        if (empty($file)) {
             return $this->fail('请上传简历附件');
         }
         $resume = Resume::find($resume_id);
-        if (!$resume){
+        if (!$resume) {
             return $this->fail('简历不存在');
         }
-        $row = Resume::where(['user_id' => $request->user_id,'name'=>$name])->first();
-        if($row){
+        $row = Resume::where(['user_id' => $request->user_id, 'name' => $name])->first();
+        if ($row) {
             return $this->fail('简历名称不能重复');
         }
 
@@ -566,7 +568,7 @@ class ResumeController extends Base
             ];
             $top_degree = new Collection();
             foreach ($educational_background as $experience) {
-                $cumulative_gpa = $experience['cumulative_gpa'];
+                $cumulative_gpa = $experience['cumulative_gpa'] ?? 0;
                 if ($cumulative_gpa > 4 || $cumulative_gpa < 0) {
                     throw new \Exception("总绩点必须在0-4之间");
                 }
@@ -704,7 +706,7 @@ class ResumeController extends Base
             DB::connection('plugin.admin.mysql')->rollBack();
             return $this->fail($e->getMessage());
         }
-        return $this->success();
+        return $this->success('成功');
     }
 
     #联想搜索
@@ -746,10 +748,9 @@ class ResumeController extends Base
         if (!$user) {
             return $this->fail('用户不存在');
         }
-        //todo
-//        if ($user->vip_status == 0) {
-//            return $this->fail('请先开通VIP');
-//        }
+        if ($user->vip_status == 0) {
+            return $this->fail('请先开通VIP');
+        }
 
         $count = Subscribe::where(['user_id' => $request->user_id])->count();
         if ($count >= 19) {
@@ -763,19 +764,19 @@ class ResumeController extends Base
             'user_id' => $request->user_id,
             'company_name' => $row->name,
         ]);
-        return $this->success();
+        return $this->success('成功');
     }
 
     #取消订阅
     function cancelSubscribeJob(Request $request)
     {
         $subscribe_id = $request->post('subscribe_id');
-        if (!empty($subscribe_id)){
-            Subscribe::where(['id'=>$subscribe_id])->delete();
-        }else{
+        if (!empty($subscribe_id)) {
+            Subscribe::where(['id' => $subscribe_id])->delete();
+        } else {
             Subscribe::where(['user_id' => $request->user_id])->delete();
         }
-        return $this->success();
+        return $this->success('成功');
     }
 
     #订阅列表
@@ -793,9 +794,6 @@ class ResumeController extends Base
         $rows = SendLog::withTrashed()->whereIn('resume_id', $resumeList->pluck('id'))->orderBy('id', 'desc')->paginate()->items();
         return $this->success('成功', $rows);
     }
-
-
- 
 
 
 }

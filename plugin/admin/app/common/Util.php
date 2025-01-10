@@ -15,6 +15,12 @@ use Workerman\Worker;
 class Util
 {
 
+    #生成订单号
+    public static function generateOrdersn()
+    {
+        return date('Ymd') . mb_strtoupper(uniqid());
+    }
+
     /**
      * 生成数字和字母
      *

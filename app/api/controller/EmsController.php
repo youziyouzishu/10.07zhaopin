@@ -54,9 +54,9 @@ class EmsController extends Base
             } elseif (in_array($event, ['changeemail']) && $userinfo) {
                 //被占用
                 return $this->fail('邮箱已被占用');
-            } elseif (in_array($event, ['changepwd', 'resetpwd']) && !$userinfo) {
+            } elseif (in_array($event, ['login','changepwd', 'resetpwd']) && !$userinfo) {
                 //未注册
-                return $this->fail('未注册');
+                return $this->fail('邮箱未注册');
             }
         }
         $ret = Ems::send($email, null, $event);
@@ -97,13 +97,13 @@ class EmsController extends Base
             $userinfo = User::where(['email'=>$email,'type'=>$request->user_type])->first();
             if ($event == 'register' && $userinfo) {
                 //已被注册
-                return $this->fail('已被注册');
+                return $this->fail('邮箱已被注册');
             } elseif (in_array($event, ['changeemail']) && $userinfo) {
                 //被占用
-                return $this->fail('已被占用');
+                return $this->fail('邮箱已被占用');
             } elseif (in_array($event, ['changepwd', 'resetpwd']) && !$userinfo) {
                 //未注册
-                return $this->fail('未注册');
+                return $this->fail('邮箱未注册');
             }
         }
         $ret = Ems::check($email, $captcha, $event);

@@ -32,7 +32,6 @@ use plugin\admin\app\model\Base;
  * @property string|null $type 用户类型:seeker=求职者,hr=HR
  * @property string|null $name 名字
  * @property string|null $last_name 姓氏
- * @property string|null $hr_type HR类型:Regular HR=普通HR,Verified HR=认证HR,Super HR=超级HR
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User query()
@@ -52,6 +51,8 @@ use plugin\admin\app\model\Base;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \app\admin\model\UsersHr> $hr
+ * @property int $hr_type HR类型:0=Null=无,1=Regular HR=普通HR,2=Verified HR=认证HR,3=Super HR=超级HR
  * @mixin \Eloquent
  */
 class User extends Base
@@ -108,6 +109,11 @@ class User extends Base
     function profile()
     {
         return $this->hasOne(UsersProfile::class,'user_id','id');
+    }
+
+    function hr()
+    {
+        return $this->hasMany(UsersHr::class,'user_id','id');
     }
 
 
