@@ -98,10 +98,7 @@ class CommonController extends Base
     #获取会员价格列表
     function getVipList(Request $request)
     {
-        $type = $request->post('type');#类型:0=求职端,1=招聘端
-        $rows = Vip::when(!empty($type)|| $type==0, function (Builder $builder) use ($type) {
-            $builder->where('type',$type);
-        });
+        $rows = Vip::where('type',$request->user_type)->get();
         return $this->success('成功', $rows);
     }
 

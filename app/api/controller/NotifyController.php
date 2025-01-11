@@ -5,7 +5,10 @@ namespace app\api\controller;
 use app\admin\model\User;
 use app\admin\model\UsersHr;
 use app\api\basic\Base;
+use support\Cache;
+use support\exception\BusinessException;
 use support\Request;
+
 
 class NotifyController extends Base
 {
@@ -29,13 +32,13 @@ class NotifyController extends Base
     function beHr(Request $request)
     {
         $invite = $request->get('invite');
-        $invite = unserialize($invite);
+        $invite = Cache::get('invite_'.$invite);
+        if (empty($invite)){
+            return $this->success('链接不存在或已过期');
+        }
         $user_id = $invite['user_id'];
         $to_user_id = $invite['to_user_id'];
-        $time = $invite['time'];
-        if (time() - $time > 60 * 60 * 24) {
-            return $this->fail('已过有效期');
-        }
+
         $user = User::find($user_id);
         if ($user->hr->count() >= 10){
             return $this->fail('对方名额已满');

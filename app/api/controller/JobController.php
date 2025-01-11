@@ -9,10 +9,14 @@ use app\admin\model\User;
 use app\admin\model\UsersHr;
 use app\api\basic\Base;
 use Illuminate\Database\Eloquent\Builder;
+use plugin\admin\app\common\Util;
 use plugin\email\api\Email;
 use plugin\smsbao\api\Smsbao;
+use support\Cache;
 use support\Db;
 use support\Request;
+use Webman\RateLimiter\Limiter;
+use Webman\RateLimiter\RateLimitException;
 
 /**
  *HR端
@@ -373,8 +377,15 @@ class JobController extends Base
 
 
     #创建岗位
+
     function createJob(Request $request)
     {
+        try {
+            #限流器 每个用户1秒内只能请求1次
+            Limiter::check('user_'.$request->user_id, 1, 1);
+        }catch (RateLimitException $e){
+            return $this->fail(trans('Too Many Requests'));
+        }
         $position_name = $request->post('position_name');
         $position_description = $request->post('position_description');
         $minimum_salary = $request->post('minimum_salary');
@@ -481,6 +492,12 @@ class JobController extends Base
     #更新上架
     function publish(Request $request)
     {
+        try {
+            #限流器 每个用户1秒内只能请求1次
+            Limiter::check('user_'.$request->user_id, 1, 1);
+        }catch (RateLimitException $e){
+            return $this->fail(trans('Too Many Requests'));
+        }
         $job_id = $request->post('job_id');
         $position_name = $request->post('position_name');
         $position_description = $request->post('position_description');
@@ -586,10 +603,10 @@ class JobController extends Base
         $mobile = $request->post('mobile');
         $email = $request->post('email');
         $row = User::where(['mobile' => $mobile, 'email' => $email, 'type' => 1])->first();
-        if ($row) {
+        if (!$row) {
             return $this->fail('HR不存在');
         }
-        if ($row->type != 1) {
+        if ($row->hr_type != 1) {
             return $this->fail('该用户已被认证');
         }
         $user = User::find($request->user_id);
@@ -607,8 +624,10 @@ class JobController extends Base
         if ($hr_count >= 10) {
             return $this->fail('邀请数量已达上限');
         }
-        $invite = serialize(['user_id' => $user->id, 'to_user_id' => $row->id, 'time' => time()]);
+        $invite = Util::generateOrdersn();
+        Cache::set('invite_'.$invite,['user_id' => $user->id, 'to_user_id' => $row->id],60*60*24);
         $url = 'https://1007zhaopin.62.hzgqapp.com/api/notify/beHr?invite=' . $invite;
+        $url = '<a href="'.$url.'">'.$url.'</a>';
         #发送短信
         $content = "$user->company_name $user->position $user->last_name $user->name invites you to become a certified HR. Click the link to complete certification: $url";
         $account = Smsbao::getSmsbaoAccount();

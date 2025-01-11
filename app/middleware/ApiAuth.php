@@ -1,4 +1,5 @@
 <?php
+
 namespace app\middleware;
 
 use ReflectionClass;
@@ -8,19 +9,22 @@ use Webman\MiddlewareInterface;
 use Webman\Http\Response;
 
 
-
 class ApiAuth implements MiddlewareInterface
 {
-    public function process(Request|\Webman\Http\Request $request, callable $handler) : Response
+    public function process(Request|\Webman\Http\Request $request, callable $handler): Response
     {
+
         $user_type = $request->header('user-type');
-        if (!in_array($user_type,[0,1])){
+
+        if ($user_type === null || !in_array($user_type, [0, 1])) {
             return json(['code' => 0, 'msg' => '非法访问', 'data' => []]);
         }
         $request->user_type = $user_type;
 
+        $request->user_id = 0;
+
         // 通过反射获取控制器哪些方法不需要登录
-        if (!empty($request->controller)){  #路由中return无实际controller
+        if (!empty($request->controller)) {  #路由中return无实际controller
             $controller = new ReflectionClass($request->controller);
             $noNeedLogin = $controller->getDefaultProperties()['noNeedLogin'] ?? [];
             $arr = array_map('strtolower', $noNeedLogin);
@@ -43,5 +47,5 @@ class ApiAuth implements MiddlewareInterface
         ]);
         return $response;
     }
-    
+
 }

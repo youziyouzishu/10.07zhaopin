@@ -17,6 +17,8 @@ use support\Db;
 use support\Request;
 use Tinywan\Jwt\Exception\JwtTokenException;
 use Tinywan\Jwt\JwtToken;
+use Webman\RateLimiter\Limiter;
+use Webman\RateLimiter\RateLimitException;
 
 /**
  * 求职端
@@ -46,6 +48,7 @@ class ResumeController extends Base
             $company->setAttribute('is_subscribe', $subscribeStatus ? 1 : 0);
         }
         $query = Job::where(['status' => 1])
+            ->with(['user'])
             //薪资范围筛选
             ->when(!empty($salary) || $salary == 0, function (Builder $query) use ($salary) {
                 if ($salary == 0) {
@@ -336,9 +339,16 @@ class ResumeController extends Base
         return $this->success('成功', $row);
     }
 
+
     #创建简历
     function createResume(Request $request)
     {
+        try {
+            #限流器 每个用户1秒内只能请求1次
+            Limiter::check('user_'.$request->user_id, 1, 1);
+        }catch (RateLimitException $e){
+            return $this->fail(trans('Too Many Requests'));
+        }
         $name = $request->post('name');#简历名称
         $file = $request->post('file');#简历附件
         $educational_background = $request->post('educational_background');#教育背景
@@ -527,6 +537,12 @@ class ResumeController extends Base
 
     function editResume(Request $request)
     {
+        try {
+            #限流器 每个用户1秒内只能请求1次
+            Limiter::check('user_'.$request->user_id, 1, 1);
+        }catch (RateLimitException $e){
+            return $this->fail(trans('Too Many Requests'));
+        }
         $resume_id = $request->post('resume_id');
         $name = $request->post('name');#简历名称
         $file = $request->post('file');#简历附件

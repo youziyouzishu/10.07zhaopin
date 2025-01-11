@@ -174,17 +174,17 @@ class UserController extends Base
 
     function editUserInfo(Request $request)
     {
-        $avatar = $request->post('avatar');
-        $nickname = $request->post('nickname');
-        $wechat = $request->post('wechat');
-        $birthday = $request->post('birthday');
-        $city = $request->post('city');
 
         $data = $request->post();
 
         $row = User::find($request->user_id);
+        if (!$row) {
+            return $this->fail('用户不存在');
+        }
+
+        $userAttributes = $row->getAttributes();
         foreach ($data as $key => $value) {
-            if (!empty($value) || $value == 0) {
+            if (array_key_exists($key, $userAttributes) && (!empty($value) || $value === 0)) {
                 $row->setAttribute($key, $value);
             }
         }
