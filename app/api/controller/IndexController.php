@@ -16,14 +16,7 @@ class IndexController extends Base
 
     public function index(Request $request)
     {
-        try {
-            #限流器 每个用户1秒内只能请求1次
-            Limiter::check('user_' . $request->user_id, 1, 1);
-        } catch (RateLimitException $e) {
-            return $this->fail(trans('Too Many Requests'));
-        }
 
-        return $this->success('ok');
     }
 
 

@@ -29,13 +29,10 @@ class EmsController extends Base
         if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
            return $this->fail('邮箱格式错误');
         }
-        if (!preg_match("/^[a-z0-9_\-]{3,30}\$/i", $event)) {
-            return $this->fail('事件名称错误');
-        }
 
         $last = Ems::getLast($email, $event);
         if ($last && time() - $last->created_at->timestamp < 60) {
-            return $this->fail('发送频繁');
+            return $this->fail('邮件发送频繁');
         }
 
         // 获取当前小时的开始和结束时间
@@ -43,7 +40,7 @@ class EmsController extends Base
         $endTime = Carbon::now()->endOfHour();
         $ipSendTotal = Ems::where(['ip' => $request->getRealIp()])->whereBetween('created_at', [$startTime, $endTime])->count();
         if ($ipSendTotal >= 5) {
-            return $this->fail('发送频繁');
+            return $this->fail('邮件发送频繁');
         }
 
         if ($event) {
@@ -84,9 +81,6 @@ class EmsController extends Base
 
         if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return $this->fail('邮箱格式错误');
-        }
-        if (!preg_match("/^[a-z0-9_\-]{3,30}\$/i", $event)) {
-            return $this->fail('事件名称错误');
         }
 
         if (!preg_match("/^[a-z0-9]{4,6}\$/i", $captcha)) {

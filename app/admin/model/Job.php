@@ -27,7 +27,7 @@ use plugin\admin\app\model\Base;
  * @property int $overall_gpa_requirement 总绩点要求（满分4.0）（0-4）
  * @property int $major_gpa_requirement 专业绩点要求（满分4.0）（0-4）
  * @property int $minimum_full_time_internship_experience_years 全职工作最低年限要求（0-15）
- * @property int $minimun_internship_experience_number 实习工作最低段数要求（0-5）
+ * @property int $minimum_internship_experience_number 实习工作最低段数要求（0-5）
  * @property string $top_secret 绝密:0=false=否,1=true=是
  * @property string|null $graduation_date 应届生毕业日期
  * @property string $position_location 工作地址
@@ -94,7 +94,7 @@ class Job extends Base
         'from_limitation',
         'us_citizen',
         'minimum_full_time_internship_experience_years',
-        'minimun_internship_experience_number',
+        'minimum_internship_experience_number',
     ];
 
     function skill()

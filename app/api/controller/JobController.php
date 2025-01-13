@@ -159,8 +159,8 @@ class JobController extends Base
                 $query->where('total_full_time_experience_years', '>=', $defaultJob->minimum_full_time_internship_experience_years);
             })
             //实习段数
-            ->when($defaultJob->minimun_internship_experience_number > 0, function (Builder $query) use ($defaultJob) {
-                $query->where('total_internship_experience_number', '<=', $defaultJob->minimun_internship_experience_number);
+            ->when($defaultJob->minimum_internship_experience_number > 0, function (Builder $query) use ($defaultJob) {
+                $query->where('total_internship_experience_number', '<=', $defaultJob->minimum_internship_experience_number);
             })
             //应届生毕业日期
             ->when($defaultJob->graduation_date != null, function (Builder $query) use ($defaultJob) {
@@ -384,7 +384,7 @@ class JobController extends Base
             #限流器 每个用户1秒内只能请求1次
             Limiter::check('user_'.$request->user_id, 1, 1);
         }catch (RateLimitException $e){
-            return $this->fail(trans('Too Many Requests'));
+            return $this->fail('请求频繁');
         }
         $position_name = $request->post('position_name');
         $position_description = $request->post('position_description');
@@ -403,7 +403,7 @@ class JobController extends Base
         $overall_gpa_requirement = $request->post('overall_gpa_requirement');
         $major_gpa_requirement = $request->post('major_gpa_requirement');
         $minimum_full_time_internship_experience_years = $request->post('minimum_full_time_internship_experience_years');
-        $minimun_internship_experience_number = $request->post('minimun_internship_experience_number');
+        $minimum_internship_experience_number = $request->post('minimum_internship_experience_number');
         $top_secret = $request->post('top_secret');
         $graduation_date = $request->post('graduation_date');
         $position_location = $request->post('position_location');
@@ -442,7 +442,7 @@ class JobController extends Base
                 'overall_gpa_requirement' => $overall_gpa_requirement,
                 'major_gpa_requirement' => empty($major_gpa_requirement) ? 0 : $major_gpa_requirement,
                 'minimum_full_time_internship_experience_years' => $minimum_full_time_internship_experience_years,
-                'minimun_internship_experience_number' => $minimun_internship_experience_number,
+                'minimum_internship_experience_number' => $minimum_internship_experience_number,
                 'top_secret' => $top_secret,
                 'graduation_date' => $graduation_date,
                 'position_location' => $position_location,
@@ -496,7 +496,7 @@ class JobController extends Base
             #限流器 每个用户1秒内只能请求1次
             Limiter::check('user_'.$request->user_id, 1, 1);
         }catch (RateLimitException $e){
-            return $this->fail(trans('Too Many Requests'));
+            return $this->fail('请求频繁');
         }
         $job_id = $request->post('job_id');
         $position_name = $request->post('position_name');
@@ -516,7 +516,7 @@ class JobController extends Base
         $overall_gpa_requirement = $request->post('overall_gpa_requirement');
         $major_gpa_requirement = $request->post('major_gpa_requirement');
         $minimum_full_time_internship_experience_years = $request->post('minimum_full_time_internship_experience_years');
-        $minimun_internship_experience_number = $request->post('minimun_internship_experience_number');
+        $minimum_internship_experience_number = $request->post('minimum_internship_experience_number');
         $top_secret = $request->post('top_secret');
         $graduation_date = $request->post('graduation_date');
         $position_location = $request->post('position_location');
@@ -553,7 +553,7 @@ class JobController extends Base
             $row->overall_gpa_requirement = $overall_gpa_requirement;
             $row->major_gpa_requirement = empty($major_gpa_requirement) ? 0 : $major_gpa_requirement;
             $row->minimum_full_time_internship_experience_years = $minimum_full_time_internship_experience_years;
-            $row->minimun_internship_experience_number = $minimun_internship_experience_number;
+            $row->minimum_internship_experience_number = $minimum_internship_experience_number;
             $row->top_secret = $top_secret;
             $row->graduation_date = $graduation_date;
             $row->position_location = $position_location;
@@ -641,7 +641,7 @@ class JobController extends Base
 
         $result = file_get_contents($sendUrl);
         if ($result != 0) {
-            return $this->fail(Smsbao::SMSBAO_STATUS[$result]);
+            return $this->fail('发送短信失败');
         }
         #发送邮箱
         try {

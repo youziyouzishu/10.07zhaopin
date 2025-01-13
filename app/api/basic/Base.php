@@ -23,7 +23,7 @@ class Base
      */
     protected function json(int $code, string $msg = 'ok',  $data = []): Response
     {
-        return json(['code' => $code, 'data' => $data, 'msg' => $msg]);
+        return json(['code' => $code, 'data' => $data, 'msg' => trans($msg)]);
     }
 
     protected function success(string $msg = '成功',  $data = []): Response

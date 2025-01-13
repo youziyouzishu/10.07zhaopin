@@ -35,14 +35,14 @@ class SmsController extends Base
         $last = Sms::getLast($mobile, $event);
 
         if ($last && time() - $last->created_at->timestamp < 60) {
-            return $this->fail('发送频繁');
+            return $this->fail('短信发送频繁');
         }
         // 获取当前小时的开始和结束时间
         $startTime = Carbon::now()->startOfHour();
         $endTime = Carbon::now()->endOfHour();
         $ipSendTotal = Sms::where(['ip' => $request->getRealIp()])->whereBetween('created_at', [$startTime, $endTime])->count();
         if ($ipSendTotal >= 5) {
-            return $this->fail('发送频繁');
+            return $this->fail('短信发送频繁');
         }
         if ($event) {
             $userinfo = User::where(['mobile' => $mobile, 'type' => $request->user_type])->first();

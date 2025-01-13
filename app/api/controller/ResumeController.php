@@ -3,6 +3,7 @@
 namespace app\api\controller;
 
 use app\admin\model\Company;
+use app\admin\model\EducationalBackground;
 use app\admin\model\Job;
 use app\admin\model\Resume;
 use app\admin\model\SendLog;
@@ -118,7 +119,7 @@ class ResumeController extends Base
                     return $query->where('adult', $adult);
                 })
                 //是否签证支持
-                ->when(!empty($user_profile->sponsorship), function (Builder $query) use ($sponsorship) {
+                ->when($sponsorship == 1, function (Builder $query) use ($sponsorship) {
                     return $query->where('sponsorship', $sponsorship);
                 })
                 //受限国家
@@ -165,7 +166,7 @@ class ResumeController extends Base
                     $degreeQsRanking = $query->value('degree_qs_ranking');
                     $degreeUsRanking = $query->value('degree_us_ranking');
                     // 筛选出符合的教育背景
-                    $filteredEducationalBackground = $defaultResume->educationalBackground->filter(function ($item) use ($degreeRequirements, $overallGpaRequirement, $majorGpaRequirement, $degreeQsRanking, $degreeUsRanking, $query) {
+                    $filteredEducationalBackground = $defaultResume->educationalBackground->filter(function (EducationalBackground $item) use ($degreeRequirements, $overallGpaRequirement, $majorGpaRequirement, $degreeQsRanking, $degreeUsRanking, $query) {
                         $qsCondition = ($degreeQsRanking == 0) || ($item->top_qs_ranking <= $degreeQsRanking && $item->top_qs_ranking != 0);
                         $usCondition = ($degreeUsRanking == 0) || ($item->top_us_ranking <= $degreeUsRanking && $item->top_us_ranking != 0);
                         return $item->degree === $degreeRequirements &&
@@ -229,9 +230,9 @@ class ResumeController extends Base
                 })
                 //实习工作最低段数要求
                 ->when(function (Builder $query) {
-                    return $query->value('minimun_internship_experience_number') > 0;
+                    return $query->value('minimum_internship_experience_number') > 0;
                 }, function (Builder $query) use ($defaultResume) {
-                    $query->where('minimun_internship_experience_number', '<=', $defaultResume->total_internship_experience_number);
+                    $query->where('minimum_internship_experience_number', '<=', $defaultResume->total_internship_experience_number);
                 })
                 //应届生毕业日期
                 ->when(function (Builder $query) {
@@ -266,27 +267,174 @@ class ResumeController extends Base
         return $this->success('成功', ['list' => $rows, 'company' => $company]);
     }
 
-    #详情
-    function detail(Request $request)
-    {
-        $job_id = $request->post('job_id');
-        $row = Job::find($job_id);
-        return $this->success('成功', $row);
-    }
-
     #投递简历
     function send(Request $request)
     {
         $job_id = $request->post('job_id');
+        $job = Job::find($job_id);
+        if (!$job) {
+            return $this->fail('岗位不存在');
+        }
+        if ($job->status == 0) {
+            return $this->fail('岗位消失了');
+        }
+        $user = User::find($request->user_id);
+        if (!$user) {
+            return $this->fail('用户不存在');
+        }
+        if (empty($user->profile)) {
+            return $this->fail('请先完善个人资料');
+        }
         $defaultResume = Resume::where(['user_id' => $request->user_id, 'default' => 1])->first();
         if (!$defaultResume) {
             return $this->fail('请先选择默认简历');
+        }
+
+        /**
+         * 岗位保密
+         */
+        if ($job->top_secret == 1 && $user->profile->top_secret == 0) {
+            return $this->fail('此岗位为绝密岗位');
+        }
+        if ($job->adult == 1 && $user->profile->adult == 0) {
+            return $this->fail('此岗位为成年岗位');
+        }
+
+        if ($user->profile->sponsorship == 1 && $job->sponsorship == 0) {
+            return $this->fail('此岗位不担保签证');
+        }
+
+        if ($job->from_limitation == 0 && $user->profile->from_limitation == 1) {
+            return $this->fail('此岗位不接受受限国家');
+        }
+
+        if ($job->us_citizen == 1 && $user->profile->us_citizen == 0) {
+            return $this->fail('此岗位仅限美国公民');
+        }
+
+
+        #岗位技术栈匹配
+        $jobSkills = $job->skill->pluck('name');
+        $resumeSkills = $defaultResume->skill->pluck('name');
+        // 判断 job_skills 中的所有技能是否全部在 resume_skills 中
+        $allSkillsMatch = $jobSkills->every(function ($skill) use ($resumeSkills) {
+            return $resumeSkills->contains($skill);
+        });
+        // 找出 job_skills 中不在 resume_skills 中的技能
+        $unmatchedSkills = $jobSkills->diff($resumeSkills);
+
+        if (!$allSkillsMatch) {
+            return $this->fail('此岗位技术栈不匹配:' . $unmatchedSkills->implode(', '));
+        }
+        #学历匹配
+        $degreeRequirements = $job->degree_requirements;
+        if (in_array($job->degree_requirements, $defaultResume->educationalBackground->pluck('degree_to_job')->toArray())) {
+            $overallGpaRequirement = $job->overall_gpa_requirement;
+            $majorGpaRequirement = $job->major_gpa_requirement;
+            $degreeQsRanking = $job->degree_qs_ranking;
+            $degreeUsRanking = $job->degree_us_ranking;
+            // 筛选出符合的教育背景
+            $filteredEducationalBackground = $defaultResume->educationalBackground->filter(function (EducationalBackground $item) use ($degreeRequirements, $overallGpaRequirement, $majorGpaRequirement, $degreeQsRanking, $degreeUsRanking, $job) {
+                $qsCondition = ($degreeQsRanking == 0) || ($item->top_qs_ranking <= $degreeQsRanking && $item->top_qs_ranking != 0);
+                $usCondition = ($degreeUsRanking == 0) || ($item->top_us_ranking <= $degreeUsRanking && $item->top_us_ranking != 0);
+                return $item->degree === $degreeRequirements &&
+                    $item->cumulative_gpa >= $overallGpaRequirement &&
+                    $job->major == $item->major &&
+                    $item->major_gpa >= $majorGpaRequirement &&
+                    $qsCondition &&
+                    $usCondition;
+            });
+            if ($filteredEducationalBackground->isEmpty()) {
+                return $this->fail('此岗位学历不匹配');
+            }
+        } else {
+            // 不符合
+            $top = $defaultResume->educationalBackground->pluck('degree_to_job')->max();
+            if ($top > $degreeRequirements) {
+                $overallGpaRequirement = $job->overall_gpa_requirement;
+                $majorGpaRequirement = $job->major_gpa_requirement;
+                $degreeQsRanking = $job->degree_qs_ranking;
+                $degreeUsRanking = $job->degree_us_ranking;
+                if ($overallGpaRequirement != 0 || $majorGpaRequirement != 0 || $degreeQsRanking != 0 || $degreeUsRanking != 0) {
+                    return $this->fail('此岗位学历不匹配');
+                }
+            } else {
+                return $this->fail('此岗位学历不匹配');
+            }
+        }
+
+        //项目技术栈匹配
+        if ($job->project_tech_stack_match == 1){
+            $jobSkills = $job->skill->pluck('name');
+            $projectSkills = $defaultResume->projectSkill->pluck('name');
+            $allSkillsMatch = $jobSkills->every(function ($skill) use ($projectSkills) {
+                return $projectSkills->contains($skill);
+            });
+            $unmatchedSkills = $jobSkills->diff($projectSkills);
+            if (!$allSkillsMatch) {
+                return $this->fail('此岗位项目技能不匹配:' . $unmatchedSkills->implode(', '));
+            }
+        }
+
+        //实习技术栈匹配
+        if ($job->internship_tech_stack_match == 1){
+            $jobSkills = $job->skill->pluck('name');
+            $internshipSkills = $defaultResume->internshipSkill->pluck('name');
+            $allSkillsMatch = $jobSkills->every(function ($skill) use ($internshipSkills) {
+                return $internshipSkills->contains($skill);
+            });
+            $unmatchedSkills = $jobSkills->diff($internshipSkills);
+            if (!$allSkillsMatch) {
+                return $this->fail('此岗位实习技能不匹配:' . $unmatchedSkills->implode(', '));
+            }
+        }
+
+        //全职技术栈匹配
+        if ($job->full_time_tech_stack_match == 1){
+            $jobSkills = $job->skill->pluck('name');
+            $fulltimeSkills = $defaultResume->fulltimeSkill->pluck('name');
+            $allSkillsMatch = $jobSkills->every(function ($skill) use ($fulltimeSkills) {
+                return $fulltimeSkills->contains($skill);
+            });
+            $unmatchedSkills = $jobSkills->diff($fulltimeSkills);
+            if (!$allSkillsMatch) {
+                return $this->fail('此岗位全职技能不匹配:' . $unmatchedSkills->implode(', '));
+            }
+        }
+
+        //全职工作最低年限要求
+        if($defaultResume->total_full_time_experience_years < $job->minimum_full_time_internship_experience_years){
+            return $this->fail('此岗位全职工作年限不匹配');
+        }
+
+        //实习工作最低段数要求
+        if ($defaultResume->total_internship_experience_number < $job->minimum_internship_experience_number){
+            return $this->fail('此岗位实习工作段数不匹配');
+        }
+
+        //应届生毕业日期
+        if (!empty($job->graduation_date) && $defaultResume->end_graduation_date != $job->graduation_date){
+            return $this->fail('此岗位应届生毕业日期不匹配');
+        }
+
+        //是否允许已申请用户重复申请
+        if ($job->allow_duplicate_application == 0 && $defaultResume->sendLog->where('job_id', $job_id)->count() > 0){
+            return $this->fail('此岗位不允许重复申请');
         }
         SendLog::create([
             'resume_id' => $defaultResume->id,
             'job_id' => $job_id
         ]);
         return $this->success('成功');
+    }
+
+
+    #详情
+    function detail(Request $request)
+    {
+        $job_id = $request->post('job_id');
+        $row = Job::find($job_id);
+        return $this->success('成功', $row);
     }
 
 
@@ -345,9 +493,9 @@ class ResumeController extends Base
     {
         try {
             #限流器 每个用户1秒内只能请求1次
-            Limiter::check('user_'.$request->user_id, 1, 1);
-        }catch (RateLimitException $e){
-            return $this->fail(trans('Too Many Requests'));
+            Limiter::check('user_' . $request->user_id, 1, 1);
+        } catch (RateLimitException $e) {
+            return $this->fail('请求频繁');
         }
         $name = $request->post('name');#简历名称
         $file = $request->post('file');#简历附件
@@ -372,6 +520,8 @@ class ResumeController extends Base
             ]);
             // 映射岗位学历要求
             $degreeMapping = [
+                0 => 0,
+                1 => 1,
                 2 => 2,
                 3 => 2,
                 4 => 3,
@@ -539,9 +689,9 @@ class ResumeController extends Base
     {
         try {
             #限流器 每个用户1秒内只能请求1次
-            Limiter::check('user_'.$request->user_id, 1, 1);
-        }catch (RateLimitException $e){
-            return $this->fail(trans('Too Many Requests'));
+            Limiter::check('user_' . $request->user_id, 1, 1);
+        } catch (RateLimitException $e) {
+            return $this->fail('请求频繁');
         }
         $resume_id = $request->post('resume_id');
         $name = $request->post('name');#简历名称
@@ -575,6 +725,8 @@ class ResumeController extends Base
             $resume->skill()->delete();
             // 映射岗位学历要求
             $degreeMapping = [
+                0 => 0,
+                1 => 1,
                 2 => 2,
                 3 => 2,
                 4 => 3,

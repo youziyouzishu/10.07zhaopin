@@ -27,7 +27,7 @@ class VipController extends Base
             'ordersn'=>$ordersn,
             'pay_amount'=>$vip->price,
         ]);
-        return $this->success(trans('success'),['ordersn'=>$ordersn]);
+        return $this->success('成功',['ordersn'=>$ordersn]);
     }
 
     function pay(Request $request)
@@ -44,7 +44,7 @@ class VipController extends Base
         $amount = $request->input('amount');
         $pay = new Pay();
         $result = $pay->processPayment($nonce, $amount);
-        return $this->success(trans('success'),$result);
+        return $this->success('成功',$result);
     }
 
 

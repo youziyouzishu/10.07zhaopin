@@ -59,7 +59,7 @@ class CommonController extends Base
         $rows = Company::when(!empty($keyword), function (Builder $builder) use ($keyword) {
             $builder->whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
         })->limit(10)->get();
-        return $this->success(trans('success'), $rows);
+        return $this->success('success', $rows);
     }
 
     function getUniversityList(Request $request)
