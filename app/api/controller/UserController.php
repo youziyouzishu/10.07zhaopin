@@ -90,7 +90,7 @@ class UserController extends Base
         if ($login_type == 0) {
             $user = User::where([$field => $account, 'type' => $request->user_type])->first();
             if (!$user) {
-                return $this->fail('用户不存在');
+                return $this->fail('账户不存在');
             }
             if (!Util::passwordVerify($password, $user->password)) {
                 return $this->fail('密码错误');
@@ -109,7 +109,7 @@ class UserController extends Base
             $user = User::where([$field => $account, 'type' => $request->user_type])->first();
 
             if (!$user) {
-                return $this->fail('用户不存在');
+                return $this->fail('账户不存在');
             }
         }
         $token = JwtToken::generateToken([

@@ -382,8 +382,8 @@ class JobController extends Base
     {
         try {
             #限流器 每个用户1秒内只能请求1次
-            Limiter::check('user_'.$request->user_id, 1, 1);
-        }catch (RateLimitException $e){
+            Limiter::check('user_' . $request->user_id, 1, 1);
+        } catch (RateLimitException $e) {
             return $this->fail('请求频繁');
         }
         $position_name = $request->post('position_name');
@@ -423,41 +423,41 @@ class JobController extends Base
         }
         DB::connection('plugin.admin.mysql')->beginTransaction();
         try {
-            $job = Job::create([
+            $data = [
                 'user_id' => $request->user_id,
                 'position_name' => $position_name,
                 'position_description' => $position_description,
-                'minimum_salary' => $minimum_salary,
-                'maximum_salary' => $maximum_salary,
+                'minimum_salary' => empty($minimum_salary) ? 0 : $minimum_salary,
+                'maximum_salary' => empty($maximum_salary) ? 0 : $maximum_salary,
                 'position_type' => $position_type,
                 'adult' => $adult,
                 'work_mode' => $work_mode,
                 'sponsorship' => $sponsorship,
-                'project_tech_stack_match' => $project_tech_stack_match,
-                'internship_tech_stack_match' => $internship_tech_stack_match,
-                'full_time_tech_stack_match' => $full_time_tech_stack_match,
+                'project_tech_stack_match' => empty($project_tech_stack_match) ? 0 : $project_tech_stack_match,
+                'internship_tech_stack_match' => empty($internship_tech_stack_match) ? 0 : $internship_tech_stack_match,
+                'full_time_tech_stack_match' => empty($full_time_tech_stack_match) ? 0 : $full_time_tech_stack_match,
                 'degree_requirements' => $degree_requirements,
                 'degree_qs_ranking' => empty($degree_qs_ranking) ? 0 : $degree_qs_ranking,
                 'degree_us_ranking' => empty($degree_us_ranking) ? 0 : $degree_us_ranking,
-                'overall_gpa_requirement' => $overall_gpa_requirement,
+                'overall_gpa_requirement' => empty($overall_gpa_requirement) ? 0 : $overall_gpa_requirement,
                 'major_gpa_requirement' => empty($major_gpa_requirement) ? 0 : $major_gpa_requirement,
-                'minimum_full_time_internship_experience_years' => $minimum_full_time_internship_experience_years,
-                'minimum_internship_experience_number' => $minimum_internship_experience_number,
+                'minimum_full_time_internship_experience_years' => empty($minimum_full_time_internship_experience_years) ? 0 : $minimum_full_time_internship_experience_years,
+                'minimum_internship_experience_number' => empty($minimum_internship_experience_number) ? 0 : $minimum_internship_experience_number,
                 'top_secret' => $top_secret,
-                'graduation_date' => $graduation_date,
+                'graduation_date' => empty($graduation_date) ? null : $graduation_date,
                 'position_location' => $position_location,
-                'expected_number_of_candidates' => $expected_number_of_candidates,
+                'expected_number_of_candidates' => empty($expected_number_of_candidates) ? 0 : $expected_number_of_candidates,
                 'from_limitation' => $from_limitation,
                 'us_citizen' => $us_citizen,
-
-            ]);
+            ];
+            $job = Job::create($data);
             $job->major()->createMany($major);
             $job->skill()->createMany($skill);
             $job->niceSkill()->createMany($nice_skill);
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
-            return $this->fail($e->getMessage());
+            return $this->fail('失败');
         }
         return $this->success('成功');
     }
@@ -494,8 +494,8 @@ class JobController extends Base
     {
         try {
             #限流器 每个用户1秒内只能请求1次
-            Limiter::check('user_'.$request->user_id, 1, 1);
-        }catch (RateLimitException $e){
+            Limiter::check('user_' . $request->user_id, 1, 1);
+        } catch (RateLimitException $e) {
             return $this->fail('请求频繁');
         }
         $job_id = $request->post('job_id');
@@ -557,7 +557,7 @@ class JobController extends Base
             $row->top_secret = $top_secret;
             $row->graduation_date = $graduation_date;
             $row->position_location = $position_location;
-            $row->expected_number_of_candidates = $expected_number_of_candidates;
+            $row->expected_number_of_candidates = empty($expected_number_of_candidates) ? 0 : $expected_number_of_candidates;
             $row->from_limitation = $from_limitation;
             $row->us_citizen = $us_citizen;
             $row->allow_duplicate_application = $allow_duplicate_application;
@@ -572,7 +572,7 @@ class JobController extends Base
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
-            return $this->fail($e->getMessage());
+            return $this->fail('失败');
         }
 
         return $this->success('成功');
@@ -625,9 +625,9 @@ class JobController extends Base
             return $this->fail('邀请数量已达上限');
         }
         $invite = Util::generateOrdersn();
-        Cache::set('invite_'.$invite,['user_id' => $user->id, 'to_user_id' => $row->id],60*60*24);
+        Cache::set('invite_' . $invite, ['user_id' => $user->id, 'to_user_id' => $row->id], 60 * 60 * 24);
         $url = 'https://1007zhaopin.62.hzgqapp.com/api/notify/beHr?invite=' . $invite;
-        $url = '<a href="'.$url.'">'.$url.'</a>';
+        $url = '<a href="' . $url . '">' . $url . '</a>';
         #发送短信
         $content = "$user->company_name $user->position $user->last_name $user->name invites you to become a certified HR. Click the link to complete certification: $url";
         $account = Smsbao::getSmsbaoAccount();

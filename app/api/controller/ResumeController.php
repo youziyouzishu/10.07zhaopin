@@ -320,11 +320,8 @@ class ResumeController extends Base
         $allSkillsMatch = $jobSkills->every(function ($skill) use ($resumeSkills) {
             return $resumeSkills->contains($skill);
         });
-        // 找出 job_skills 中不在 resume_skills 中的技能
-        $unmatchedSkills = $jobSkills->diff($resumeSkills);
-
         if (!$allSkillsMatch) {
-            return $this->fail('此岗位技术栈不匹配:' . $unmatchedSkills->implode(', '));
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
         }
         #学历匹配
         $degreeRequirements = $job->degree_requirements;
@@ -345,7 +342,7 @@ class ResumeController extends Base
                     $usCondition;
             });
             if ($filteredEducationalBackground->isEmpty()) {
-                return $this->fail('此岗位学历不匹配');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
             }
         } else {
             // 不符合
@@ -356,10 +353,10 @@ class ResumeController extends Base
                 $degreeQsRanking = $job->degree_qs_ranking;
                 $degreeUsRanking = $job->degree_us_ranking;
                 if ($overallGpaRequirement != 0 || $majorGpaRequirement != 0 || $degreeQsRanking != 0 || $degreeUsRanking != 0) {
-                    return $this->fail('此岗位学历不匹配');
+                    return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
                 }
             } else {
-                return $this->fail('此岗位学历不匹配');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
             }
         }
 
@@ -370,9 +367,8 @@ class ResumeController extends Base
             $allSkillsMatch = $jobSkills->every(function ($skill) use ($projectSkills) {
                 return $projectSkills->contains($skill);
             });
-            $unmatchedSkills = $jobSkills->diff($projectSkills);
             if (!$allSkillsMatch) {
-                return $this->fail('此岗位项目技能不匹配:' . $unmatchedSkills->implode(', '));
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
             }
         }
 
@@ -383,9 +379,8 @@ class ResumeController extends Base
             $allSkillsMatch = $jobSkills->every(function ($skill) use ($internshipSkills) {
                 return $internshipSkills->contains($skill);
             });
-            $unmatchedSkills = $jobSkills->diff($internshipSkills);
             if (!$allSkillsMatch) {
-                return $this->fail('此岗位实习技能不匹配:' . $unmatchedSkills->implode(', '));
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
             }
         }
 
@@ -396,30 +391,29 @@ class ResumeController extends Base
             $allSkillsMatch = $jobSkills->every(function ($skill) use ($fulltimeSkills) {
                 return $fulltimeSkills->contains($skill);
             });
-            $unmatchedSkills = $jobSkills->diff($fulltimeSkills);
             if (!$allSkillsMatch) {
-                return $this->fail('此岗位全职技能不匹配:' . $unmatchedSkills->implode(', '));
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
             }
         }
 
         //全职工作最低年限要求
         if($defaultResume->total_full_time_experience_years < $job->minimum_full_time_internship_experience_years){
-            return $this->fail('此岗位全职工作年限不匹配');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
         }
 
         //实习工作最低段数要求
         if ($defaultResume->total_internship_experience_number < $job->minimum_internship_experience_number){
-            return $this->fail('此岗位实习工作段数不匹配');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
         }
 
         //应届生毕业日期
         if (!empty($job->graduation_date) && $defaultResume->end_graduation_date != $job->graduation_date){
-            return $this->fail('此岗位应届生毕业日期不匹配');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
         }
 
         //是否允许已申请用户重复申请
         if ($job->allow_duplicate_application == 0 && $defaultResume->sendLog->where('job_id', $job_id)->count() > 0){
-            return $this->fail('此岗位不允许重复申请');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
         }
         SendLog::create([
             'resume_id' => $defaultResume->id,
@@ -665,7 +659,7 @@ class ResumeController extends Base
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
-            return $this->fail($e->getMessage());
+            return $this->fail('失败');
         }
         return $this->success('成功');
     }
@@ -872,7 +866,7 @@ class ResumeController extends Base
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
-            return $this->fail($e->getMessage());
+            return $this->fail('失败');
         }
         return $this->success('成功');
     }
