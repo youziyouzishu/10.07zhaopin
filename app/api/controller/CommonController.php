@@ -25,7 +25,7 @@ class CommonController extends Base
         $keyword = $request->post('keyword');
         $name = $request->post('name');
         if ($name == 'United States'){
-            $rows = Province::when(!empty($keyword), function (Builder $builder) use ($keyword) {
+            $rows = Province::orderBy('name')->when(!empty($keyword), function (Builder $builder) use ($keyword) {
                 $builder->whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
             })->get();
         }else{
@@ -46,7 +46,7 @@ class CommonController extends Base
     function getMajorList(Request $request)
     {
         $keyword = $request->post('keyword');
-        $rows = Major::when(!empty($keyword), function (Builder $builder) use ($keyword) {
+        $rows = Major::orderBy('name')->when(!empty($keyword), function (Builder $builder) use ($keyword) {
             $builder->whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
         })->limit(10)->get();
         return $this->success('成功', $rows);
@@ -74,7 +74,7 @@ class CommonController extends Base
     function getSkillList(Request $request)
     {
         $keyword = $request->post('keyword');
-        $rows = Skill::when(!empty($keyword), function (Builder $builder) use ($keyword) {
+        $rows = Skill::orderBy('name')->when(!empty($keyword), function (Builder $builder) use ($keyword) {
             $builder->whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
         })->limit(10)->get();
         return $this->success('成功', $rows);

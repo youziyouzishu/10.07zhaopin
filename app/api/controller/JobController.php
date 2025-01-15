@@ -8,15 +8,18 @@ use app\admin\model\Resume;
 use app\admin\model\User;
 use app\admin\model\UsersHr;
 use app\api\basic\Base;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use plugin\admin\app\common\Util;
 use plugin\email\api\Email;
 use plugin\smsbao\api\Smsbao;
 use support\Cache;
 use support\Db;
+use support\Log;
 use support\Request;
 use Webman\RateLimiter\Limiter;
 use Webman\RateLimiter\RateLimitException;
+use Webman\RedisQueue\Redis;
 
 /**
  *HR端
@@ -457,6 +460,7 @@ class JobController extends Base
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
+            Log::error($e->getMessage());
             return $this->fail('失败');
         }
         return $this->success('成功');
@@ -561,6 +565,7 @@ class JobController extends Base
             $row->from_limitation = $from_limitation;
             $row->us_citizen = $us_citizen;
             $row->allow_duplicate_application = $allow_duplicate_application;
+            $row->expire_time = $row->user->vip_status == 0 ? Carbon::now()->addDays(7)->toDateTimeString() : Carbon::now()->addDays(30)->toDateTimeString();
             $row->status = 1;
             $row->save();
             $row->major()->createMany($major);
@@ -569,9 +574,14 @@ class JobController extends Base
             if ($row->allow_duplicate_application == 1) {
                 $row->sendLog()->delete();
             }
+            $queue = Redis::send('job', ['event'=>'job_expire','job_id' => $row->id], $row->expire_time->timestamp - time());
+            if (!$queue){
+                throw new \Exception('加入队列失败');
+            }
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
+            Log::error($e->getMessage());
             return $this->fail('失败');
         }
 
@@ -669,6 +679,18 @@ class JobController extends Base
         $hr->user->hr_type = 1;#变为普通HR
         $hr->user->save();
         $hr->delete();
+        return $this->success('成功');
+    }
+
+
+    function deleteJob(Request $request)
+    {
+        $job_id = $request->post('job_id');
+        $row = Job::find($job_id);
+        if (!$row) {
+            return $this->fail('岗位不存在');
+        }
+        $row->delete();
         return $this->success('成功');
     }
 

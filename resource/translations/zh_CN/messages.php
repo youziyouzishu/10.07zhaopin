@@ -4,6 +4,7 @@ return [
     '请求频繁' => 'Too Many Requests',
     '请先完善所属公司和岗位'=>'Please complete your company and position details first',
     '邮箱格式错误' => 'Invalid email format',
+    '手机号格式错误' => 'Invalid sms format',
     '邮件发送频繁' => 'Email sending requests are too frequent Please try again later',
     '短信发送频繁' => 'SMS sending requests are too frequent Please try again later',
     '邮箱已被注册' => 'The email address is already registered',

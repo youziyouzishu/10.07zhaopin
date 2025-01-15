@@ -29,7 +29,7 @@ class SmsController extends Base
         $event = $event ?: 'register';
 
         if (!$mobile || !preg_match('/^[0-9]{10}$/', $mobile)) {
-            return $this->fail('手机号不正确');
+            return $this->fail('手机号格式错误');
         }
 
         $last = Sms::getLast($mobile, $event);

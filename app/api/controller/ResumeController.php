@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use support\Db;
+use support\Log;
 use support\Request;
 use Tinywan\Jwt\Exception\JwtTokenException;
 use Tinywan\Jwt\JwtToken;
@@ -27,7 +28,7 @@ use Webman\RateLimiter\RateLimitException;
 class ResumeController extends Base
 {
 
-    protected $noNeedLogin = ['index'];
+    protected $noNeedLogin = ['index','detail'];
 
     #首页
     function index(Request $request)
@@ -427,7 +428,7 @@ class ResumeController extends Base
     function detail(Request $request)
     {
         $job_id = $request->post('job_id');
-        $row = Job::find($job_id);
+        $row = Job::with(['user'])->find($job_id);
         return $this->success('成功', $row);
     }
 
@@ -659,6 +660,7 @@ class ResumeController extends Base
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
+            Log::error($e->getMessage());
             return $this->fail('失败');
         }
         return $this->success('成功');
@@ -866,6 +868,7 @@ class ResumeController extends Base
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
+            Log::error($e->getMessage());
             return $this->fail('失败');
         }
         return $this->success('成功');
@@ -877,8 +880,8 @@ class ResumeController extends Base
         $keyword = $request->post('keyword');
         try {
             // 查询公司和职位
-            $companyQuery = Company::where('name', 'like', '%' . $keyword . '%');
-            $jobQuery = Job::where('position_name', 'like', '%' . $keyword . '%');
+            $companyQuery = Company::whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
+            $jobQuery = Job::whereRaw('LOWER(position_name) LIKE LOWER(?)', [ '%' . $keyword . '%']);
 
             // 获取公司和职位的总数
             $companyCount = $companyQuery->count();
@@ -952,8 +955,8 @@ class ResumeController extends Base
     #投递记录
     function getSendLogList(Request $request)
     {
-        $resumeList = Resume::where(['user_id' => $request->user_id])->get();
-        $rows = SendLog::withTrashed()->whereIn('resume_id', $resumeList->pluck('id'))->orderBy('id', 'desc')->paginate()->items();
+        $resume_ids = Resume::where(['user_id' => $request->user_id])->pluck('id');
+        $rows = SendLog::withTrashed()->whereIn('resume_id', $resume_ids)->orderBy('id', 'desc')->paginate()->items();
         return $this->success('成功', $rows);
     }
 
