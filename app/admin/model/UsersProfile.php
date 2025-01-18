@@ -32,6 +32,7 @@ use plugin\admin\app\model\Base;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UsersProfile newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UsersProfile newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UsersProfile query()
+ * @property string $salutation 问候语
  * @mixin \Eloquent
  */
 class UsersProfile extends Base

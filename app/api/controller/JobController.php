@@ -40,7 +40,6 @@ class JobController extends Base
         $major_gpa = $request->post('major_gpa');#专业绩点 接口获取
         $minimum_full_time_internship_experience_years = $request->post('minimum_full_time_internship_experience_years');#全职工作年限 接口获取
         $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1])->first();#默认岗位
-
         if (!$defaultJob) {
             return $this->fail('请先设置默认岗位');
         }
@@ -127,7 +126,6 @@ class JobController extends Base
                     $query->where('degree_to_job', $defaultJob->degree_requirements);
                 });
             }, function (Builder $query) use ($defaultJob) {
-
                 $query->whereHas('educationalBackground', function (Builder $query) use ($defaultJob) {
                     $query
                         ->where('degree_to_job', $defaultJob->degree_requirements)//筛选出符合学历的教育背景
@@ -147,12 +145,9 @@ class JobController extends Base
                 $degreeQsRanking = $defaultJob->degree_qs_ranking;
                 $degreeUsRanking = $defaultJob->degree_us_ranking;
                 if ($overallGpaRequirement == 0 && $majorGpaRequirement == 0 && $degreeQsRanking == 0 && $degreeUsRanking == 0) {
-                    $query->whereHas('educationalBackground', function (Builder $query) use ($defaultJob) {
-                        $maxDegree = $query->max('degree_to_job');
-                        if ($maxDegree < $defaultJob->degree_requirements) {
-                            $query->whereRaw('1 = 0');
-                        }
-                    });
+                    if ($query->value('top_degree') < $defaultJob->degree_requirements) {
+                        $query->whereRaw('1 = 0');
+                    }
                 } else {
                     $query->whereRaw('1 = 0');
                 }
@@ -416,6 +411,12 @@ class JobController extends Base
         $major = $request->post('major');# 数组 [{"name":"xx"},{"name":"xx"}]
         $skill = $request->post('skill'); # 数组 [{"name":"xx"},{"name":"xx"}]
         $nice_skill = $request->post('nice_skill'); # 数组 [{"name":"xx"},{"name":"xx"}]
+        if (!empty($minimum_salary) || !empty($maximum_salary)){
+            if ($minimum_salary > $maximum_salary){
+                return $this->fail('薪资范围错误');
+            }
+        }
+
 
         $user = User::find($request->user_id);
         if (!$user) {
@@ -487,7 +488,7 @@ class JobController extends Base
         if (empty($row)) {
             return $this->fail('岗位不存在');
         }
-        Job::where(['user_id' => $request->user_id])->update(['default' => 0]);
+        Job::where(['user_id' => $request->user_id])->where('id', '<>', $job_id)->update(['default' => 0]);
         $row->default = 1;
         $row->save();
         return $this->success('成功');
@@ -531,6 +532,11 @@ class JobController extends Base
         $major = $request->post('major');# 数组 [{"name":"xx"},{"name":"xx"}]
         $skill = $request->post('skill'); # 数组 [{"name":"xx"},{"name":"xx"}]
         $nice_skill = $request->post('nice_skill'); # 数组 [{"name":"xx"},{"name":"xx"}]
+        if (!empty($minimum_salary) || !empty($maximum_salary)){
+            if ($minimum_salary > $maximum_salary){
+                return $this->fail('薪资范围错误');
+            }
+        }
         $row = Job::find($job_id);
         if (!$row || $row->status != 0) {
             return $this->fail('岗位不存在');
@@ -542,8 +548,8 @@ class JobController extends Base
             $row->niceSkill()->delete();
             $row->position_name = $position_name;
             $row->position_description = $position_description;
-            $row->minimum_salary = $minimum_salary;
-            $row->maximum_salary = $maximum_salary;
+            $row->minimum_salary = empty($minimum_salary) ? 0 : $minimum_salary ;
+            $row->maximum_salary = empty($maximum_salary) ? 0 : $maximum_salary ;
             $row->position_type = $position_type;
             $row->adult = $adult;
             $row->work_mode = $work_mode;
@@ -565,7 +571,7 @@ class JobController extends Base
             $row->from_limitation = $from_limitation;
             $row->us_citizen = $us_citizen;
             $row->allow_duplicate_application = $allow_duplicate_application;
-            $row->expire_time = $row->user->vip_status == 0 ? Carbon::now()->addDays(7)->toDateTimeString() : Carbon::now()->addDays(30)->toDateTimeString();
+            $row->expire_time = $row->user->vip_status == 0 ? Carbon::now()->addDays(7)->toDateTimeString() : Carbon::now()->addDays(14)->toDateTimeString();
             $row->status = 1;
             $row->save();
             $row->major()->createMany($major);
@@ -574,8 +580,8 @@ class JobController extends Base
             if ($row->allow_duplicate_application == 1) {
                 $row->sendLog()->delete();
             }
-            $queue = Redis::send('job', ['event'=>'job_expire','job_id' => $row->id], $row->expire_time->timestamp - time());
-            if (!$queue){
+            $queue = Redis::send('job', ['event' => 'job_expire', 'job_id' => $row->id], $row->expire_time->timestamp - time());
+            if (!$queue) {
                 throw new \Exception('加入队列失败');
             }
             DB::connection('plugin.admin.mysql')->commit();

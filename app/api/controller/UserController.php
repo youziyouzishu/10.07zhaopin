@@ -121,6 +121,10 @@ class UserController extends Base
 
     function getUserInfo(Request $request)
     {
+        $user_id = $request->post('user_id');
+        if (!empty($user_id)) {
+            $request->user_id = $user_id;
+        }
         $row = User::with(['profile'])->find($request->user_id);
         return $this->success('成功', $row);
     }
@@ -212,6 +216,7 @@ class UserController extends Base
         $country = $request->post('country');
         $postal_code = $request->post('postal_code');
         $us_citizen = $request->post('us_citizen');
+        $salutation = $request->post('salutation');
         $profile = UsersProfile::where('user_id', $request->user_id)->first();
         if (!$profile) {
             $profile = new UsersProfile();
@@ -235,6 +240,7 @@ class UserController extends Base
         $profile->postal_code = $postal_code;
         $profile->us_citizen = $us_citizen;
         $profile->middle_name = $middle_name;
+        $profile->salutation = $salutation;
         $profile->save();
         return $this->success('成功');
     }
