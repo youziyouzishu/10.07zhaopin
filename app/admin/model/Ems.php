@@ -5,6 +5,7 @@ namespace app\admin\model;
 use plugin\admin\app\common\Util;
 use plugin\admin\app\model\Base;
 use plugin\email\api\Email;
+use Webman\RedisQueue\Client;
 
 
 /**
@@ -86,21 +87,14 @@ class Ems extends Base
     {
         $code = is_null($code) ? Util::numeric(6) : $code;
         $ip = request()->getRealIp();
-        $ems = self::create([
+        self::create([
             'event' => $event,
             'email' => $email,
             'code' => $code,
             'ip' => $ip,
         ]);
-        try {
-            Email::sendByTemplate($email, 'captcha', [
-                'code'=>$code
-            ]);
-            return true;
-        }catch (\Throwable $e){
-            $ems->delete();
-            return false;
-        }
+        Client::send('job', ['event' => 'email_captcha', 'email' => $email,'code'=>$code]);
+        return true;
     }
 
     /**

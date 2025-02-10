@@ -668,9 +668,12 @@ class ResumeController extends Base
             $resume->top_degree = $top_degree->max();
             $resume->total_internship_experience_number = $resume->internshipExperience()->count();
             $resume->end_graduation_date = $resume->educationalBackground()->max('graduation_date');
-            $resume->default = $resume->user->resume->isNotEmpty() ? 0 : 1;
+            $resume->default = $resume->user->resume()->where('default',1)->first() ? 0 : 1;
             $resume->save();
             DB::connection('plugin.admin.mysql')->commit();
+        } catch (\Exception $e){
+            DB::connection('plugin.admin.mysql')->rollBack();
+            return $this->fail($e->getMessage());
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
             Log::error($e->getMessage());
@@ -914,6 +917,21 @@ class ResumeController extends Base
         }
     }
 
+
+    #热门关键词
+    function getHotKeyWord(Request $request)
+    {
+        $yesterday = Carbon::yesterday()->startOfDay();
+        $endOfDay = Carbon::yesterday()->endOfDay();
+        $topJobs = SendLog::with(['job'])->whereBetween('created_at', [$yesterday, $endOfDay])
+            ->select('job_id', Db::raw('COUNT(*) as job_count'))
+            ->groupBy('job_id')
+            ->orderByDesc('job_count')
+            ->limit(5)
+            ->get();
+        return $this->success('成功', $topJobs);
+    }
+
     #订阅岗位
     function subscribeJob(Request $request)
     {
@@ -926,7 +944,7 @@ class ResumeController extends Base
         if (!$user) {
             return $this->fail('用户不存在');
         }
-        if ($user->vip_status == 0) {
+        if (empty($user->vip_expire_at) || $user->vip_expire_at->isPast()) {
             return $this->fail('请先开通VIP');
         }
 
@@ -969,9 +987,10 @@ class ResumeController extends Base
     function getSendLogList(Request $request)
     {
         $resume_ids = Resume::where(['user_id' => $request->user_id])->pluck('id');
-        $rows = SendLog::withTrashed()->whereIn('resume_id', $resume_ids)->orderBy('id', 'desc')->paginate()->items();
+        $rows = SendLog::withTrashed()->whereIn('resume_id', $resume_ids)->orderBy('id', 'desc')->paginate();
         return $this->success('成功', $rows);
     }
 
 
 }
+

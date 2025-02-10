@@ -19,6 +19,7 @@ use support\Log;
 use support\Request;
 use Webman\RateLimiter\Limiter;
 use Webman\RateLimiter\RateLimitException;
+use Webman\RedisQueue\Client;
 use Webman\RedisQueue\Redis;
 
 /**
@@ -450,7 +451,7 @@ class JobController extends Base
                 'top_secret' => $top_secret,
                 'graduation_date' => empty($graduation_date) ? null : $graduation_date,
                 'position_location' => $position_location,
-                'expected_number_of_candidates' => empty($expected_number_of_candidates) ? 0 : $expected_number_of_candidates,
+                'expected_number_of_candidates' => empty($expected_number_of_candidates) ? null : $expected_number_of_candidates,
                 'from_limitation' => $from_limitation,
                 'us_citizen' => $us_citizen,
             ];
@@ -567,11 +568,11 @@ class JobController extends Base
             $row->top_secret = $top_secret;
             $row->graduation_date = $graduation_date;
             $row->position_location = $position_location;
-            $row->expected_number_of_candidates = empty($expected_number_of_candidates) ? 0 : $expected_number_of_candidates;
+            $row->expected_number_of_candidates = empty($expected_number_of_candidates) ? null : $expected_number_of_candidates;
             $row->from_limitation = $from_limitation;
             $row->us_citizen = $us_citizen;
             $row->allow_duplicate_application = $allow_duplicate_application;
-            $row->expire_time = $row->user->vip_status == 0 ? Carbon::now()->addDays(7)->toDateTimeString() : Carbon::now()->addDays(14)->toDateTimeString();
+            $row->expire_time = empty($row->user->vip_expire_at) || $row->user->vip_expire_at->isPast()? Carbon::now()->addDays(7)->toDateTimeString() : Carbon::now()->addDays(14)->toDateTimeString();
             $row->status = 1;
             $row->save();
             $row->major()->createMany($major);
@@ -642,51 +643,23 @@ class JobController extends Base
         }
         $invite = Util::generateOrdersn();
         Cache::set('invite_' . $invite, ['user_id' => $user->id, 'to_user_id' => $row->id], 60 * 60 * 24);
-        $url = 'https://1007zhaopin.62.hzgqapp.com/api/notify/beHr?invite=' . $invite;
-        $url = '<a href="' . $url . '">' . $url . '</a>';
+
+        $url = '<a href="' . 'https://1007zhaopin.62.hzgqapp.com/api/notify/beHr?invite=' . $invite . '">' . 'https://1007zhaopin.62.hzgqapp.com/api/notify/beHr?invite=' . $invite . '</a>';
         #发送短信
         $content = "$user->company_name $user->position $user->last_name $user->name invites you to become a certified HR. Click the link to complete certification: $url";
         $account = Smsbao::getSmsbaoAccount();
-        if (!$account) return $this->fail('未配置发信账户');
-        $sendUrl = Smsbao::SMSBAO_URL . "wsms?sms&u="
-            . $account['Username']
-            . "&p="
-            . $account['Password']
-            . "&m=" . urlencode('+1' . $mobile)
-            . "&c=" . urlencode($content);
-
-        $result = file_get_contents($sendUrl);
-        if ($result != 0) {
-            return $this->fail('发送短信失败');
+        if (!$account) {
+            return $this->fail('未配置发信账户');
         }
+        $sendUrl = Smsbao::SMSBAO_URL . "wsms?sms&u=" . $account['Username'] . "&p=" . $account['Password'] . "&m=" . urlencode('+1' . $mobile) . "&c=" . urlencode($content);
+        Client::send('job', ['event' => 'sms_add_hr', 'url' =>$sendUrl]);
         #发送邮箱
-        try {
-            Email::sendByTemplate($email, 'invite', [
-                'company_name' => $user->company_name,
-                'position' => $user->position,
-                'last_name' => $user->last_name,
-                'name' => $user->name,
-                'url' => $url,
-            ]);
-        } catch (\Throwable $e) {
-            return $this->fail('发送邮箱失败');
-        }
+        Client::send('job', ['event' => 'email_add_hr', 'email' => $email,'template' => 'invite','company_name' => $user->company_name,'position' => $user->position,'last_name' => $user->last_name,'name' => $user->name, 'url' => $url]);
+
         return $this->success('成功');
     }
 
-    #删除HR
-    function deleteHr(Request $request)
-    {
-        $hr_id = $request->post('hr_id');
-        $hr = UsersHr::find($hr_id);
-        if (!$hr) {
-            return $this->fail('HR不存在');
-        }
-        $hr->user->hr_type = 1;#变为普通HR
-        $hr->user->save();
-        $hr->delete();
-        return $this->success('成功');
-    }
+
 
 
     function deleteJob(Request $request)
@@ -700,13 +673,31 @@ class JobController extends Base
         return $this->success('成功');
     }
 
-    #获取HR列表
+    #获取邀请HR列表
     function getHrList(Request $request)
     {
         $rows = UsersHr::where(['user_id' => $request->user_id])
             ->with('toUser')
             ->get();
         return $this->success('成功', $rows);
+    }
+
+    #删除HR
+    function deleteHr(Request $request)
+    {
+        $hr_id = $request->post('hr_id');
+        $hr = UsersHr::find($hr_id);
+        if (!$hr) {
+            return $this->fail('HR不存在');
+        }
+        $hr->user->hr_type = 1;#变为普通HR
+        $hr->user->save();
+        $hr->delete();
+        #发信给自己 (超级HR)
+        Client::send('job', ['event' => 'email_delete_hr_1', 'email' => $hr->user->email]);
+        #发信给认证HR
+        Client::send('job', ['event' => 'email_delete_hr_2', 'email' => $hr->toUser->email]);
+        return $this->success('成功');
     }
 
 

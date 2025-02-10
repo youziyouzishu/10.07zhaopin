@@ -2,6 +2,9 @@
 
 namespace app\queue\redis;
 
+use app\admin\model\User;
+use plugin\email\api\Email;
+use plugin\smsbao\api\Smsbao;
 use Webman\RedisQueue\Consumer;
 
 class Job implements Consumer
@@ -16,15 +19,70 @@ class Job implements Consumer
     public function consume($data)
     {
         $event = $data['event'];
-        if ($event == 'job_expire'){
+        if ($event == 'job_expire') {
             $job = \app\admin\model\Job::find($data['job_id']);
-            if ($job){
-                if ($job->expire_time < time() && $job->status == 1){
+            if ($job) {
+                if ($job->expire_time < time() && $job->status == 1) {
                     $job->status = 0;
                     $job->save();
                 }
             }
         }
+        if ($event == 'email_add_hr') {
+            $email = $data['email'];
+            $company_name = $data['company_name'];
+            $position = $data['position'];
+            $last_name = $data['last_name'];
+            $name = $data['name'];
+            $url = $data['url'];
+            $template = $data['template'];
+            Email::sendByTemplate($email, $template, [
+                'company_name' => $company_name,
+                'position' => $position,
+                'last_name' => $last_name,
+                'name' => $name,
+                'url' => $url,
+            ]);
+        }
+        if ($event == 'sms_add_hr') {
+            $url = $data['url'];
+            file_get_contents($url);
+        }
+        if ($event == 'email_cancel_hr_1') {
+            $email = $data['email'];
+            Email::sendByTemplate($email, 'cancel_hr_1');
+        }
+        if ($event == 'email_cancel_hr_2') {
+            $email = $data['email'];
+            Email::sendByTemplate($email, 'cancel_hr_2');
+        }
+        if ($event == 'email_cancel_hr_3') {
+            $email = $data['email'];
+            Email::sendByTemplate($email, 'cancel_hr_3');
+        }
+        if ($event == 'email_cancel_hr_4') {
+            $email = $data['email'];
+            Email::sendByTemplate($email, 'cancel_hr_4');
+        }
+        if ($event == 'email_captcha') {
+            $email = $data['email'];
+            $code = $data['code'];
+            Email::sendByTemplate($email, 'captcha', ['code'=>$code]);
+        }
+        if ($event == 'sms_captcha') {
+            $mobile = $data['mobile'];
+            $code = $data['code'];
+            Smsbao::send($mobile,$code);
+        }
+        if ($event == 'email_delete_hr_1'){
+            $email = $data['email'];
+            Email::sendByTemplate($email, 'delete_hr_1');
+        }
+        if ($event == 'email_delete_hr_2'){
+            $email = $data['email'];
+            Email::sendByTemplate($email, 'delete_hr_2');
+        }
+
     }
-            
+
 }

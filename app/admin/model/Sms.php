@@ -2,11 +2,10 @@
 
 namespace app\admin\model;
 
-
-use GuzzleHttp\Client;
 use plugin\admin\app\common\Util;
 use plugin\admin\app\model\Base;
 use plugin\smsbao\api\Smsbao;
+use Webman\RedisQueue\Client;
 
 /**
  * 
@@ -86,24 +85,15 @@ class Sms extends Base
         $code = is_null($code) ? Util::numeric(6) : $code;
         $ip = request()->getRealIp();
         // 定义请求的 URL 和数据
-        $sms = self::create([
+        self::create([
             'event' => $event,
             'mobile' => $mobile,
             'code' => $code,
             'ip' => $ip
         ]);
-        try {
-            $response = Smsbao::send('+'.$country_num.$mobile,$code);
-            $response = $response->rawBody();
-            $ret = json_decode($response);
-            if ($ret->code != 0) {
-                return false;
-            }
-            return true;
-        } catch (\Throwable $e) {
-            $sms->delete();
-            return false;
-        }
+        Client::send('job', ['event' => 'sms_captcha', 'mobile' => '+'.$country_num.$mobile,'code'=>$code]);
+        return true;
+
     }
 
     /**

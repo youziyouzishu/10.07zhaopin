@@ -6,6 +6,7 @@ use app\admin\model\Ems;
 use app\admin\model\Report;
 use app\admin\model\Sms;
 use app\admin\model\User;
+use app\admin\model\UsersHr;
 use app\admin\model\UsersProfile;
 use app\api\basic\Base;
 use plugin\admin\app\common\Util;
@@ -13,6 +14,8 @@ use support\Request;
 use Tencent\TLSSigAPIv2;
 use Tinywan\Jwt\JwtToken;
 use Tinywan\Validate\Facade\Validate;
+use Webman\RedisQueue\Client;
+use Webman\RedisQueue\Redis;
 
 class UserController extends Base
 {
@@ -41,14 +44,18 @@ class UserController extends Base
         if (!$smsResult) {
             return $this->fail('手机验证码不正确');
         }
+        $email = User::where(['email' => $email,'type' => $request->user_type])->first();
+        if ($email) {
+            return $this->fail('邮箱已存在');
+        }
+        $mobile = User::where(['mobile' => $mobile,'type' => $request->user_type])->first();
+        if ($mobile) {
+            return $this->fail('手机号已存在');
+        }
         $has = User::where(['email' => $email, 'mobile' => $mobile, 'type' => $request->user_type == 0 ? 1 : 0])->first();
         if ($has) {
             //如果有对应端用户，则删除
             $has->delete();
-        }
-        $user = User::where(['email' => $email, 'mobile' => $mobile, 'type' => $request->user_type])->first();
-        if ($user) {
-            return $this->fail('用户已存在');
         }
         $user = User::create([
             'nickname' => $name . $last_name,
@@ -105,9 +112,7 @@ class UserController extends Base
             if (!$ret) {
                 return $this->fail('验证码不正确');
             }
-
-            $user = User::where([$field => $account, 'type' => $request->user_type])->first();
-
+            $user = User::where([$field => $account])->first();
             if (!$user) {
                 return $this->fail('账户不存在');
             }
@@ -185,7 +190,34 @@ class UserController extends Base
         if (!$row) {
             return $this->fail('用户不存在');
         }
+        if (!empty($data['company_name']) && $data['company_name'] != $row->company_name && $row->hr_type >= 2){
+            //如果认证hr修改了公司名称，则取消认证
+            //删除下面的HR
+            if ($row->hr_type == 2){
+                //认证HR
+                $hrs = UsersHr::where(['to_user_id' => $request->user_id])->get();
+                foreach ($hrs as $hr) {
+                    $hr->delete();
+                    //发信给自己
+                    Client::send('job', ['event' => 'email_cancel_hr_1', 'email' => $hr->toUser->email]);
+                    //发信给超级HR
+                    Client::send('job', ['event' => 'email_cancel_hr_2', 'email' => $hr->user->email]);
+                }
 
+            }
+            if ($row->hr_type == 3){
+                //超级HR
+                $hrs = UsersHr::where(['user_id' => $request->user_id])->get();
+                //发信给自己
+                Client::send('job', ['event' => 'email_cancel_hr_3', 'email' => $row->email]);
+                foreach ($hrs as $hr) {
+                    $hr->delete();
+                    //发信给被管理认证的HR
+                    Client::send('job', ['event' => 'email_cancel_hr_4', 'email' => $hr->toUser->email]);
+                }
+            }
+            $row->hr_type = 1;
+        }
         $userAttributes = $row->getAttributes();
         foreach ($data as $key => $value) {
             if (array_key_exists($key, $userAttributes) && (!empty($value) || $value === 0)) {
@@ -240,7 +272,7 @@ class UserController extends Base
         $profile->postal_code = $postal_code;
         $profile->us_citizen = $us_citizen;
         $profile->middle_name = $middle_name;
-        $profile->salutation = $salutation;
+        $profile->salutation = empty($salutation)? '' : $salutation;
         $profile->save();
         return $this->success('成功');
     }

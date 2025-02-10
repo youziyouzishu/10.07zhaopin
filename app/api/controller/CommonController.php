@@ -7,12 +7,15 @@ use app\admin\model\Company;
 use app\admin\model\Country;
 use app\admin\model\Major;
 use app\admin\model\Province;
+use app\admin\model\SendLog;
 use app\admin\model\Skill;
 use app\admin\model\University;
 use app\admin\model\Vip;
 use app\api\basic\Base;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use plugin\admin\app\model\Option;
+use support\Db;
 use support\Request;
 use Tencent\TLSSigAPIv2;
 
@@ -74,9 +77,18 @@ class CommonController extends Base
     function getSkillList(Request $request)
     {
         $keyword = $request->post('keyword');
-        $rows = Skill::orderBy('name')->when(!empty($keyword), function (Builder $builder) use ($keyword) {
-            $builder->whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
-        })->limit(10)->get();
+        $ids = $request->post('ids');#数组
+        if (!empty($ids)){
+            $rows = Skill::whereIn('id',$ids)->get()->map(function (Skill $item) {
+                return [
+                    'name' => $item->name,
+                ];
+            });
+        }else{
+            $rows = Skill::orderBy('name')->when(!empty($keyword), function (Builder $builder) use ($keyword) {
+                $builder->whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
+            })->limit(10)->get();
+        }
         return $this->success('成功', $rows);
     }
 
@@ -101,6 +113,8 @@ class CommonController extends Base
         $rows = Vip::where('type',$request->user_type)->get();
         return $this->success('成功', $rows);
     }
+
+
 
 
 

@@ -44,7 +44,7 @@ class EmsController extends Base
         }
 
         if ($event) {
-            $userinfo = User::where(['email'=>$email])->first();
+            $userinfo = User::where(['email'=>$email, 'type' => $request->user_type])->first();
             if ($event == 'register' && $userinfo) {
                 //已被注册
                 return $this->fail('邮箱已被注册');

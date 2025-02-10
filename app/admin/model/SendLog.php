@@ -45,4 +45,9 @@ class SendLog extends Base
         'job_id',
     ];
 
+    function job()
+    {
+        return $this->belongsTo(Job::class, 'job_id', 'id');
+    }
+
 }

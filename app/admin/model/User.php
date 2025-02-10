@@ -34,8 +34,6 @@ use plugin\admin\app\model\Base;
  * @property string $company_name 所属公司
  * @property string $position 岗位
  * @property string $company_explain 公司描述
- * @property string|null $vip_expire_at vip过期时间
- * @property int $vip_status 会员状态:0=未开通,1=已开通
  * @property int $notice_type 通知类型:0=邮箱通知,1=短信通知
  * @property int $show_status 展示简历状态:0=否=false,1=是=true
  * @property \Illuminate\Support\Carbon|null $created_at 创建时间
@@ -53,6 +51,8 @@ use plugin\admin\app\model\Base;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
+ * @property \Illuminate\Support\Carbon|null $vip_expire_at vip过期时间
+ * @property-read mixed $vip_status
  * @mixin \Eloquent
  */
 
@@ -72,6 +72,13 @@ class User extends Base
      * @var string
      */
     protected $primaryKey = 'id';
+
+    protected $casts = [
+        'vip_expire_at' => 'datetime',
+    ];
+
+    protected $appends = ['vip_status'];
+    
 
     protected $fillable = [
         'nickname',
@@ -125,6 +132,11 @@ class User extends Base
     function job()
     {
         return $this->hasMany(Job::class,'user_id','id');
+    }
+
+    function getVipStatusAttribute($value)
+    {
+        return !(empty($this->vip_expire_at) || $this->vip_expire_at->isPast());
     }
 
 
