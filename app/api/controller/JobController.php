@@ -49,6 +49,7 @@ class JobController extends Base
         $defaultJobNiceSkill = $defaultJob->niceSkill->pluck('name')->toArray();
 
         $query = Resume::where(['default' => 1])
+            ->with(['skill'])
             ->whereHas('user', function (Builder $query) {
                 $query->where('show_status', 1);
             })
@@ -123,15 +124,17 @@ class JobController extends Base
             })
             //学历筛选
             ->when(function (Builder $query) use ($defaultJob) {
-                $query->whereHas('educationalBackground', function (Builder $query) use ($defaultJob) {
+                return $query->whereHas('educationalBackground',function (Builder $query) use ($defaultJob) {
                     $query->where('degree_to_job', $defaultJob->degree_requirements);
-                });
+                })->exists();
             }, function (Builder $query) use ($defaultJob) {
                 $query->whereHas('educationalBackground', function (Builder $query) use ($defaultJob) {
                     $query
                         ->where('degree_to_job', $defaultJob->degree_requirements)//筛选出符合学历的教育背景
                         ->where('cumulative_gpa', '>=', $defaultJob->overall_gpa_requirement)//筛选出符合总绩点的教育背景
-                        ->whereIn('major', $defaultJob->major->pluck('name')->toArray())//筛选出符合专业要求的教育背景
+                        ->when(!empty($defaultJob->major->pluck('name')->toArray()), function ($query, $defaultJob) {
+                            $query->whereIn('major', $defaultJob->major->pluck('name')->toArray());//筛选出符合专业要求的教育背景
+                        })
                         ->where('major_gpa', '>=', $defaultJob->major_gpa_requirement)//筛选出符合专业绩点的教育背景
                         ->when(!empty($defaultJob->degree_qs_ranking), function (Builder $query) use ($defaultJob) { //筛选出符合QS排名的教育背景
                             $query->where('top_qs_ranking', '<>', 0)->where('top_qs_ranking', '<=', $defaultJob->degree_qs_ranking);
@@ -244,7 +247,7 @@ class JobController extends Base
             ->when(!empty($minimum_full_time_internship_experience_years), function (Builder $query) use ($minimum_full_time_internship_experience_years) {
                 $query->where('total_full_time_experience_years', '>=', $minimum_full_time_internship_experience_years);
             })
-            ->with(['user' => function (Builder $builder) {
+            ->with(['user' => function ($builder) {
                 $builder->orderByDesc('online');
             }])
             ->when(!empty($defaultJobNiceSkill), function (Builder $query) use ($defaultJobNiceSkill) {

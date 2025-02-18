@@ -5,6 +5,8 @@ namespace app\api\controller;
 use app\admin\model\Company;
 use app\admin\model\EducationalBackground;
 use app\admin\model\Job;
+use app\admin\model\JobMajor;
+use app\admin\model\JobNiceSkill;
 use app\admin\model\Resume;
 use app\admin\model\SendLog;
 use app\admin\model\Subscribe;
@@ -27,7 +29,7 @@ use app\admin\model\User;
 class ResumeController extends Base
 {
 
-    protected $noNeedLogin = ['index', 'detail'];
+    protected $noNeedLogin = ['index', 'detail','indexSearch','getHotKeyWord'];
 
     #首页
     function index(Request $request)
@@ -78,10 +80,8 @@ class ResumeController extends Base
             })
             //关键字搜索筛选
             ->when(!empty($keyword), function (Builder $query) use ($keyword) {
-                $query
-                    ->orWhere('position_name', 'like', '%' . $keyword . '%')
-                    ->orWhereHas('user', function (Builder $query) use ($keyword) {
-                        $query->where('company_name', 'like', '%' . $keyword . '%');
+                $query->where('position_name',  $keyword)->orWhereHas('user', function (Builder $query) use ($keyword) {
+                        $query->where('company_name',  $keyword);
                     });
             })
             //认证HR筛选
@@ -160,8 +160,12 @@ class ResumeController extends Base
                 //学历筛选
                 ->when(function (Builder $query) use ($resume) {
                     // 首先检查候选人的教育背景是否符合岗位的最低学历要求
+                    if (empty($resume->educationalBackground)) {
+                        return false;
+                    }
                     $degreeRequirements = $query->value('degree_requirements');
-                    return in_array($degreeRequirements, $resume->educationalBackground->pluck('degree_to_job')->toArray());
+                    $educationalDegrees = $resume->educationalBackground->pluck('degree_to_job')->toArray();
+                    return in_array($degreeRequirements, $educationalDegrees);
                 }, function (Builder $query) use ($resume) {
                     // 符合
                     // 提前获取岗位要求的值
@@ -170,23 +174,30 @@ class ResumeController extends Base
                     $majorGpaRequirement = $query->value('major_gpa_requirement');
                     $degreeQsRanking = $query->value('degree_qs_ranking');
                     $degreeUsRanking = $query->value('degree_us_ranking');
+                    // 检查是否存在匹配的 major
+                    $majorExists =JobMajor::where('id',$query->value('id'))->exists();
                     // 筛选出符合的教育背景
-                    $filteredEducationalBackground = $resume->educationalBackground->filter(function (EducationalBackground $item) use ($degreeRequirements, $overallGpaRequirement, $majorGpaRequirement, $degreeQsRanking, $degreeUsRanking, $query) {
+                    $filteredEducationalBackground = $resume->educationalBackground->filter(function (EducationalBackground $item) use ($degreeRequirements, $overallGpaRequirement, $majorGpaRequirement, $degreeQsRanking, $degreeUsRanking ,$majorExists, $query) {
                         $qsCondition = ($degreeQsRanking == 0) || ($item->top_qs_ranking <= $degreeQsRanking && $item->top_qs_ranking != 0);
                         $usCondition = ($degreeUsRanking == 0) || ($item->top_us_ranking <= $degreeUsRanking && $item->top_us_ranking != 0);
+                        if ($majorExists){
+                            $majorCondition =  $query->whereHas('major', function (Builder $query) use ($item) {
+                                $query->where('name', $item->major);
+                            });
+                        }else{
+                            $majorCondition = true;
+                        }
                         return $item->degree_to_job == $degreeRequirements &&
                             $item->cumulative_gpa >= $overallGpaRequirement &&
-                            $query->whereHas('major', function (Builder $query) use ($item) {
-                                $query->where('name', $item->major);
-                            }) &&
+                            $majorCondition &&
                             $item->major_gpa >= $majorGpaRequirement &&
                             $qsCondition &&
                             $usCondition;
                     });
-
                     if ($filteredEducationalBackground->isEmpty()) {
                         $query->whereRaw('1 = 0');
                     }
+
                 }, function (Builder $query) use ($resume) {
                     $degreeRequirements = $query->value('degree_requirements');
                     // 不符合
@@ -254,7 +265,7 @@ class ResumeController extends Base
                 })
                 //非必备技能排序
                 ->when(function (Builder $query) {
-                    return $query->whereHas('niceSkill');
+                    return JobNiceSkill::where('job_id', $query->value('id'))->exists();
                 }, function (Builder $query) use ($skill) {
                     $query->withCount(['niceSkill' => function (Builder $query) use ($skill) {
                         $query->whereIn('name', $skill);
@@ -295,7 +306,6 @@ class ResumeController extends Base
         if (empty($user->profile)) {
             return $this->fail('请先完善个人资料');
         }
-
 
         /**
          * 岗位保密
@@ -901,16 +911,30 @@ class ResumeController extends Base
 
             // 获取公司和职位的总数
             $companyCount = $companyQuery->count();
+            dump('公司数量');
+            dump($companyCount);
             $jobCount = $jobQuery->count();
+            dump('岗位数量');
+            dump($jobCount);
 
             // 计算需要获取的公司和职位数量
             $totalNeeded = 10;
-            $companyLimit = min($companyCount, $totalNeeded);
+            if ($companyCount >= 5 && $jobCount >= 5){
+                $companyLimit = $totalNeeded - 5 ;
+            }elseif ($companyCount >= 5 && $jobCount < 5){
+                $companyLimit = $totalNeeded - $jobCount;
+            }else{
+                $companyLimit = min($companyCount, $totalNeeded);
+            }
             $jobLimit = min($jobCount, $totalNeeded - $companyLimit);
 
             // 执行查询并获取结果
-            $company = $companyQuery->limit($companyLimit)->get();
-            $job = $jobQuery->limit($jobLimit)->get();
+            $company = $companyQuery->limit($companyLimit)->get()->map(function ($item) {
+                return ['name'=>$item->name];
+            });
+            $job = $jobQuery->limit($jobLimit)->get()->map(function ($item) {
+                return ['name'=>$item->position_name];
+            });
             return $this->success('成功', ['company' => $company, 'job' => $job]);
         } catch (\Throwable $e) {
             return $this->fail('搜索失败，请稍后再试');

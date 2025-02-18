@@ -58,7 +58,7 @@ class UserController extends Base
             $has->delete();
         }
         $user = User::create([
-            'nickname' => $name . $last_name,
+            'nickname' => $name .' '. $middle_name .' '. $last_name,
             'middle_name' => $middle_name,
             'avatar' => '/avatar.png',
             'email' => $email,
@@ -71,7 +71,8 @@ class UserController extends Base
             'last_name' => $last_name,
             'password' => Util::passwordHash($password),
             'type' => $request->user_type,
-            'hr_type' => $request->user_type == 0 ? 0 : 1
+            'hr_type' => $request->user_type == 0 ? 0 : 1,
+            'salutation'=> $request->user_type == 0 ? '' : '我对您的背景非常感兴趣，您能发我一下您的简历吗'
         ]);
         $token = JwtToken::generateToken([
             'id' => $user->id,
@@ -217,6 +218,9 @@ class UserController extends Base
                 }
             }
             $row->hr_type = 1;
+        }
+        if (in_array($data,['middle_name','name','last_name'])){
+            $row->nickname = $data['name'].' '.$data['middle_name'].' '.$data['last_name'];
         }
         $userAttributes = $row->getAttributes();
         foreach ($data as $key => $value) {

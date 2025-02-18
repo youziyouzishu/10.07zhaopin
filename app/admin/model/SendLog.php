@@ -21,6 +21,7 @@ use plugin\admin\app\model\Base;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SendLog onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SendLog withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SendLog withoutTrashed()
+ * @property-read \app\admin\model\Job|null $job
  * @mixin \Eloquent
  */
 class SendLog extends Base

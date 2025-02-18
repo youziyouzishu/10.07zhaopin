@@ -9,6 +9,7 @@ use app\admin\model\Major;
 use app\admin\model\Province;
 use app\admin\model\SendLog;
 use app\admin\model\Skill;
+use app\admin\model\SystemNotice;
 use app\admin\model\University;
 use app\admin\model\Vip;
 use app\api\basic\Base;
@@ -112,6 +113,21 @@ class CommonController extends Base
     {
         $rows = Vip::where('type',$request->user_type)->get();
         return $this->success('成功', $rows);
+    }
+
+    function getNoticeList(Request $request)
+    {
+        $type = $request->post('type');
+        $rows = SystemNotice::where('type',$type)->orderByDesc('id')->paginate()->items();
+        return $this->success('成功', $rows);
+    }
+
+
+    function getNoticeDetail(Request $request)
+    {
+        $id = $request->post('id');
+        $row = SystemNotice::find($id);
+        return $this->success('成功', $row);
     }
 
 

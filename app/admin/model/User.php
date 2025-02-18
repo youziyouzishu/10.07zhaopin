@@ -113,7 +113,6 @@ class User extends Base
         'middle_name',
         'salutation',
     ];
-
     function profile()
     {
         return $this->hasOne(UsersProfile::class,'user_id','id');
