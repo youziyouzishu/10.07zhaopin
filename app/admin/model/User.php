@@ -53,6 +53,7 @@ use plugin\admin\app\model\Base;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
  * @property \Illuminate\Support\Carbon|null $vip_expire_at vip过期时间
  * @property-read mixed $vip_status
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \app\admin\model\SendLog> $sendLog
  * @mixin \Eloquent
  */
 
@@ -136,6 +137,11 @@ class User extends Base
     function getVipStatusAttribute($value)
     {
         return !(empty($this->vip_expire_at) || $this->vip_expire_at->isPast());
+    }
+
+    function sendLog()
+    {
+        return $this->hasMany(SendLog::class,'user_id','id');
     }
 
 

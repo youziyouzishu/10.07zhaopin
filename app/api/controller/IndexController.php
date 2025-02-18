@@ -7,13 +7,16 @@ use app\admin\model\EducationalBackground;
 use app\admin\model\Job;
 use app\admin\model\JobMajor;
 use app\admin\model\JobNiceSkill;
+use app\admin\model\JobSkill;
 use app\admin\model\Resume;
+use app\admin\model\SendLog;
 use app\admin\model\Subscribe;
 use app\admin\model\User;
 use app\api\basic\Base;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use support\Db;
 use support\Request;
 use Tinywan\Jwt\Exception\JwtTokenException;
 use Tinywan\Jwt\JwtToken;
@@ -26,7 +29,17 @@ class IndexController extends Base
 
     function test()
     {
+        $userSkill = ['JAVASCRIPT'];
 
+        $rows = Job:: //技术栈筛选
+        when(function (Builder $query) {
+            return true;
+        }, function (Builder $query) use ($userSkill) {
+            $query->whereDoesntHave('skill', function ($query) use ($userSkill) {
+                $query->whereNotIn('name', $userSkill);
+            });
+        })->get();
+        return $this->success('成功', $rows);
     }
 
     public function hr(Request $request)
@@ -101,6 +114,7 @@ class IndexController extends Base
             })
             //技术栈要求筛选
             ->when(!empty($defaultJobSkill), function (Builder $query) use ($defaultJobSkill) {
+
                 $query->whereHas('skill', function (Builder $query) use ($defaultJobSkill) {
                     $query->whereIn('name', $defaultJobSkill);
                 }, '>=', count($defaultJobSkill));
@@ -125,9 +139,7 @@ class IndexController extends Base
             })
             //学历筛选
             ->when(function (Builder $query) use ($defaultJob) {
-                return $query->whereHas('educationalBackground', function (Builder $query) use ($defaultJob) {
-                    $query->where('degree_to_job', $defaultJob->degree_requirements);
-                })->exists();
+                return EducationalBackground::where('id',$query->value('id'))->where('degree_to_job',$defaultJob->degree_requirements)->exists();
             }, function (Builder $query) use ($defaultJob) {
                 $query->whereHas('educationalBackground', function (Builder $query) use ($defaultJob) {
                     $query
@@ -157,106 +169,106 @@ class IndexController extends Base
                     $query->whereRaw('1 = 0');
                 }
             })
-//            //全职工作最低年限要求
-//            ->when($defaultJob->minimum_full_time_internship_experience_years > 0, function (Builder $query) use ($defaultJob) {
-//                $query->where('total_full_time_experience_years', '>=', $defaultJob->minimum_full_time_internship_experience_years);
-//            })
-//            //实习段数
-//            ->when($defaultJob->minimum_internship_experience_number > 0, function (Builder $query) use ($defaultJob) {
-//                $query->where('total_internship_experience_number', '<=', $defaultJob->minimum_internship_experience_number);
-//            })
-//            //应届生毕业日期
-//            ->when($defaultJob->graduation_date != null, function (Builder $query) use ($defaultJob) {
-//                $query->where('end_graduation_date', $defaultJob->graduation_date);
-//            })
-//            //在线状态筛选
-//            ->when(!empty($online) || $online == 0, function (Builder $query) use ($online) {
-//                $query->whereHas('user', function (Builder $query) use ($online) {
-//                    $query->where('online', $online);
-//                });
-//            })
-//            //投递状态筛选
-//            ->when(!empty($send_status) || $send_status == 0, function (Builder $query) use ($send_status, $defaultJob) {
-//                //未投递
-//                if ($send_status == 0) {
-//                    $query->whereDoesntHave('sendLog', function (Builder $query) use ($defaultJob) {
-//                        $query->where('job_id', $defaultJob->id);
-//                    });
-//                }
-//                //已投递
-//                if ($send_status == 1) {
-//                    $query->whereHas('sendLog', function (Builder $query) use ($defaultJob) {
-//                        $query->where('job_id', $defaultJob->id);
-//                    });
-//                }
-//            })
-//            //岗位所需技术筛选
-//            ->when(!empty($skill), function (Builder $query) use ($skill) {
-//                $query->where(function (Builder $query) use ($skill) {
-//                    $query->orwhereHas('projectSkill', function (Builder $query) use ($skill) {
-//                        $query->whereIn('name', $skill);
-//                    })->orWhereHas('internshipSkill', function (Builder $query) use ($skill) {
-//                        $query->whereIn('name', $skill);
-//                    })->orWhereHas('fulltimeSkill', function (Builder $query) use ($skill) {
-//                        $query->whereIn('name', $skill);
-//                    });
-//                });
-//            })
-//            //手动学历筛选
-//            ->when(!empty($degree), function (Builder $query) use ($degree) {
-//                $query->whereHas('educationalBackground', function (Builder $query) use ($degree) {
-//                    $query->where('degree_to_job', $degree);
-//                });
-//            })
-//            //手动QS排名
-//            ->when(!empty($top_qs_ranking), function (Builder $query) use ($top_qs_ranking) {
-//                $query->whereHas('educationalBackground', function (Builder $query) use ($top_qs_ranking) {
-//                    $query->where('top_qs_ranking', '<>', 0)->where('top_qs_ranking', '<=', $top_qs_ranking);
-//                });
-//            })
-//            //手动US排名
-//            ->when(!empty($top_us_ranking), function (Builder $query) use ($top_us_ranking) {
-//                $query->whereHas('educationalBackground', function (Builder $query) use ($top_us_ranking) {
-//                    $query->where('top_us_ranking', '<>', 0)->where('top_us_ranking', '<=', $top_us_ranking);
-//                });
-//            })
-//            //手动总绩点筛选
-//            ->when(!empty($overall_gpa), function (Builder $query) use ($overall_gpa) {
-//                $query->whereHas('educationalBackground', function (Builder $query) use ($overall_gpa) {
-//                    $query->where('cumulative_gpa', '>=', $overall_gpa);
-//                });
-//            })
-//            //手动总绩点筛选
-//            ->when(!empty($overall_gpa), function (Builder $query) use ($overall_gpa) {
-//                $query->whereHas('educationalBackground', function (Builder $query) use ($overall_gpa) {
-//                    $query->where('cumulative_gpa', '>=', $overall_gpa);
-//                });
-//            })
-//            //手动专业筛选
-//            ->when(!empty($major), function (Builder $query) use ($major) {
-//                $query->whereHas('educationalBackground', function (Builder $query) use ($major) {
-//                    $query->whereIn('major', $major);
-//                });
-//            })
-//            //手动专业绩点筛选
-//            ->when(!empty($major_gpa), function (Builder $query) use ($major_gpa) {
-//                $query->whereHas('educationalBackground', function (Builder $query) use ($major_gpa) {
-//                    $query->where('major_gpa', '>=', $major_gpa);
-//                });
-//            })
-//            //手动筛选全职工作年限
-//            ->when(!empty($minimum_full_time_internship_experience_years), function (Builder $query) use ($minimum_full_time_internship_experience_years) {
-//                $query->where('total_full_time_experience_years', '>=', $minimum_full_time_internship_experience_years);
-//            })
-//            ->with(['user' => function ($builder) {
-//                $builder->orderByDesc('online');
-//            }])
-//            ->when(!empty($defaultJobNiceSkill), function (Builder $query) use ($defaultJobNiceSkill) {
-//                $query->withCount(['skill' => function (Builder $query) use ($defaultJobNiceSkill) {
-//                    $query->whereIn('name', $defaultJobNiceSkill);
-//                }])
-//                    ->orderByDesc('skill_count');
-//            })
+            //全职工作最低年限要求
+            ->when($defaultJob->minimum_full_time_internship_experience_years > 0, function (Builder $query) use ($defaultJob) {
+                $query->where('total_full_time_experience_years', '>=', $defaultJob->minimum_full_time_internship_experience_years);
+            })
+            //实习段数
+            ->when($defaultJob->minimum_internship_experience_number > 0, function (Builder $query) use ($defaultJob) {
+                $query->where('total_internship_experience_number', '<=', $defaultJob->minimum_internship_experience_number);
+            })
+            //应届生毕业日期
+            ->when($defaultJob->graduation_date != null, function (Builder $query) use ($defaultJob) {
+                $query->where('end_graduation_date', $defaultJob->graduation_date);
+            })
+            //在线状态筛选
+            ->when(!empty($online) || $online == 0, function (Builder $query) use ($online) {
+                $query->whereHas('user', function (Builder $query) use ($online) {
+                    $query->where('online', $online);
+                });
+            })
+            //投递状态筛选
+            ->when(!empty($send_status) || $send_status == 0, function (Builder $query) use ($send_status, $defaultJob) {
+                //未投递
+                if ($send_status == 0) {
+                    $query->whereDoesntHave('sendLog', function (Builder $query) use ($defaultJob) {
+                        $query->where('job_id', $defaultJob->id);
+                    });
+                }
+                //已投递
+                if ($send_status == 1) {
+                    $query->whereHas('sendLog', function (Builder $query) use ($defaultJob) {
+                        $query->where('job_id', $defaultJob->id);
+                    });
+                }
+            })
+            //岗位所需技术筛选
+            ->when(!empty($skill), function (Builder $query) use ($skill) {
+                $query->where(function (Builder $query) use ($skill) {
+                    $query->orwhereHas('projectSkill', function (Builder $query) use ($skill) {
+                        $query->whereIn('name', $skill);
+                    })->orWhereHas('internshipSkill', function (Builder $query) use ($skill) {
+                        $query->whereIn('name', $skill);
+                    })->orWhereHas('fulltimeSkill', function (Builder $query) use ($skill) {
+                        $query->whereIn('name', $skill);
+                    });
+                });
+            })
+            //手动学历筛选
+            ->when(!empty($degree), function (Builder $query) use ($degree) {
+                $query->whereHas('educationalBackground', function (Builder $query) use ($degree) {
+                    $query->where('degree_to_job', $degree);
+                });
+            })
+            //手动QS排名
+            ->when(!empty($top_qs_ranking), function (Builder $query) use ($top_qs_ranking) {
+                $query->whereHas('educationalBackground', function (Builder $query) use ($top_qs_ranking) {
+                    $query->where('top_qs_ranking', '<>', 0)->where('top_qs_ranking', '<=', $top_qs_ranking);
+                });
+            })
+            //手动US排名
+            ->when(!empty($top_us_ranking), function (Builder $query) use ($top_us_ranking) {
+                $query->whereHas('educationalBackground', function (Builder $query) use ($top_us_ranking) {
+                    $query->where('top_us_ranking', '<>', 0)->where('top_us_ranking', '<=', $top_us_ranking);
+                });
+            })
+            //手动总绩点筛选
+            ->when(!empty($overall_gpa), function (Builder $query) use ($overall_gpa) {
+                $query->whereHas('educationalBackground', function (Builder $query) use ($overall_gpa) {
+                    $query->where('cumulative_gpa', '>=', $overall_gpa);
+                });
+            })
+            //手动总绩点筛选
+            ->when(!empty($overall_gpa), function (Builder $query) use ($overall_gpa) {
+                $query->whereHas('educationalBackground', function (Builder $query) use ($overall_gpa) {
+                    $query->where('cumulative_gpa', '>=', $overall_gpa);
+                });
+            })
+            //手动专业筛选
+            ->when(!empty($major), function (Builder $query) use ($major) {
+                $query->whereHas('educationalBackground', function (Builder $query) use ($major) {
+                    $query->whereIn('major', $major);
+                });
+            })
+            //手动专业绩点筛选
+            ->when(!empty($major_gpa), function (Builder $query) use ($major_gpa) {
+                $query->whereHas('educationalBackground', function (Builder $query) use ($major_gpa) {
+                    $query->where('major_gpa', '>=', $major_gpa);
+                });
+            })
+            //手动筛选全职工作年限
+            ->when(!empty($minimum_full_time_internship_experience_years), function (Builder $query) use ($minimum_full_time_internship_experience_years) {
+                $query->where('total_full_time_experience_years', '>=', $minimum_full_time_internship_experience_years);
+            })
+            ->with(['user' => function ($builder) {
+                $builder->orderByDesc('online');
+            }])
+            ->when(!empty($defaultJobNiceSkill), function (Builder $query) use ($defaultJobNiceSkill) {
+                $query->withCount(['skill' => function (Builder $query) use ($defaultJobNiceSkill) {
+                    $query->whereIn('name', $defaultJobNiceSkill);
+                }])
+                    ->orderByDesc('skill_count');
+            })
             ->orderByDesc('updated_at');
         $rows = $query->paginate();
         return $this->success('成功', $rows);
@@ -270,7 +282,7 @@ class IndexController extends Base
         $position_type = $request->post('position_type', '');#工作类型
         $work_mode = $request->post('work_mode', '');#工作模式:0=In-Person=现场办公,1=Hybrid=混合办公,2=Remote=远程办公
         $keyword = $request->post('keyword', '');#关键词
-        $resume_id = 39;
+        $resume_id = 36;
         try {
             $request->user_id = JwtToken::getCurrentId();
         } catch (JwtTokenException $e) {
@@ -382,11 +394,11 @@ class IndexController extends Base
             $query = $query
                 //技术栈筛选
                 ->when(function (Builder $query) {
-                    return $query->whereHas('skill');
+                    return JobSkill::where('job_id', $query->value('id'))->exists();
                 }, function (Builder $query) use ($skill) {
-                    $query->whereHas('skill', function (Builder $query) use ($skill) {
-                        $query->whereIn('name', $skill);
-                    }, '<=', count($skill));
+                    $query->whereDoesntHave('skill', function ($query) use ($skill) {
+                        $query->whereNotIn('name', $skill);
+                    });
                 })
                 //学历筛选
                 ->when(function (Builder $query) use ($resume) {
@@ -449,25 +461,25 @@ class IndexController extends Base
                 ->when(function (Builder $query) {
                     return $query->value('project_tech_stack_match') == 1;
                 }, function (Builder $query) use ($projectSkill) {
-                    $query->whereHas('skill', function (Builder $query) use ($projectSkill) {
-                        $query->whereIn('name', $projectSkill);
-                    }, '<=', count($projectSkill));
+                    $query->whereDoesntHave('skill', function ($query) use ($projectSkill) {
+                        $query->whereNotIn('name', $projectSkill);
+                    });
                 })
                 //实习技术栈匹配
                 ->when(function (Builder $query) {
                     return $query->value('internship_tech_stack_match') == 1;
                 }, function (Builder $query) use ($internshipSkill) {
-                    $query->whereHas('skill', function (Builder $query) use ($internshipSkill) {
-                        $query->whereIn('name', $internshipSkill);
-                    }, '<=', count($internshipSkill));
+                    $query->whereDoesntHave('skill', function ($query) use ($internshipSkill) {
+                        $query->whereNotIn('name', $internshipSkill);
+                    });
                 })
                 //全职技术栈匹配
                 ->when(function (Builder $query) {
                     return $query->value('full_time_tech_stack_match') == 1;
                 }, function (Builder $query) use ($fulltimeSkill) {
-                    $query->whereHas('skill', function (Builder $query) use ($fulltimeSkill) {
-                        $query->whereIn('name', $fulltimeSkill);
-                    }, '<=', count($fulltimeSkill));
+                    $query->whereDoesntHave('skill', function ($query) use ($fulltimeSkill) {
+                        $query->whereNotIn('name', $fulltimeSkill);
+                    });
                 })
                 //全职工作最低年限要求
                 ->when(function (Builder $query) {
@@ -513,6 +525,171 @@ class IndexController extends Base
         $rows = $query->paginate();
 
         return $this->success('成功', ['list' => $rows, 'company' => $company]);
+    }
+
+    function send(Request $request)
+    {
+        $job_id = 20;
+        $resume_id = 36;
+        $request->user_id = 3;
+        $job = Job::find($job_id);
+        $resume = Resume::find($resume_id);
+        if (!$resume) {
+            return $this->fail('请先选择简历');
+        }
+        if (!$job) {
+            return $this->fail('岗位不存在');
+        }
+        if ($job->status == 0) {
+            return $this->fail('岗位消失了');
+        }
+        $user = User::find($request->user_id);
+        if (!$user) {
+            return $this->fail('用户不存在');
+        }
+        if (empty($user->profile)) {
+            return $this->fail('请先完善个人资料');
+        }
+
+        /**
+         * 岗位保密
+         */
+        if ($job->top_secret == 1 && $user->profile->top_secret == 0) {
+            return $this->fail('此岗位为绝密岗位');
+        }
+        if ($job->adult == 1 && $user->profile->adult == 0) {
+            return $this->fail('此岗位为成年岗位');
+        }
+
+        if ($user->profile->sponsorship == 1 && $job->sponsorship == 0) {
+            return $this->fail('此岗位不担保签证');
+        }
+
+        if ($job->from_limitation == 0 && $user->profile->from_limitation == 1) {
+            return $this->fail('此岗位不接受受限国家');
+        }
+
+        if ($job->us_citizen == 1 && $user->profile->us_citizen == 0) {
+            return $this->fail('此岗位仅限美国公民');
+        }
+
+
+        #岗位技术栈匹配
+        $jobSkills = $job->skill->pluck('name');#岗位的技术栈
+        dump($jobSkills);
+        $resumeSkills = $resume->skill->pluck('name');#简历的技术栈
+        dump($resumeSkills);
+        // 判断 job_skills 中的所有技能是否全部在 resume_skills 中
+        $allSkillsMatch = $jobSkills->every(function ($skill) use ($resumeSkills) {
+            return $resumeSkills->contains($skill);
+        });
+        dump($allSkillsMatch);
+        if (!$allSkillsMatch) {
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求1');
+        }
+        #学历匹配
+        $degreeRequirements = $job->degree_requirements;
+        if (in_array($degreeRequirements, $resume->educationalBackground->pluck('degree_to_job')->toArray())) {
+            $overallGpaRequirement = $job->overall_gpa_requirement;
+            $majorGpaRequirement = $job->major_gpa_requirement;
+            $degreeQsRanking = $job->degree_qs_ranking;
+            $degreeUsRanking = $job->degree_us_ranking;
+            if (empty($job->major->pluck('name')->toArray())) {
+                $majorExists = false;
+            } else {
+                $majorExists = true;
+            }
+            // 筛选出符合的教育背景
+            $filteredEducationalBackground = $resume->educationalBackground->filter(function (EducationalBackground $item) use ($degreeRequirements, $overallGpaRequirement, $majorGpaRequirement, $degreeQsRanking, $degreeUsRanking, $majorExists, $job) {
+                $qsCondition = ($degreeQsRanking == 0) || ($item->top_qs_ranking <= $degreeQsRanking && $item->top_qs_ranking != 0);
+                $usCondition = ($degreeUsRanking == 0) || ($item->top_us_ranking <= $degreeUsRanking && $item->top_us_ranking != 0);
+                if ($majorExists) {
+                    $majorCondition = in_array($item->major, $job->major->pluck('name')->toArray());
+                } else {
+                    $majorCondition = true;
+                }
+                return $item->degree_to_job == $degreeRequirements &&
+                    $item->cumulative_gpa >= $overallGpaRequirement &&
+                    $majorCondition &&
+                    $item->major_gpa >= $majorGpaRequirement &&
+                    $qsCondition &&
+                    $usCondition;
+            });
+            if ($filteredEducationalBackground->isEmpty()) {
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求2');
+            }
+        } else {
+            // 不符合
+            if ($resume->top_degree > $degreeRequirements) {
+                $overallGpaRequirement = $job->overall_gpa_requirement;
+                $majorGpaRequirement = $job->major_gpa_requirement;
+                $degreeQsRanking = $job->degree_qs_ranking;
+                $degreeUsRanking = $job->degree_us_ranking;
+                if ($overallGpaRequirement != 0 || $majorGpaRequirement != 0 || $degreeQsRanking != 0 || $degreeUsRanking != 0) {
+                    return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求3');
+                }
+            } else {
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求4');
+            }
+        }
+
+        //项目技术栈匹配
+        if ($job->project_tech_stack_match == 1) {
+            $jobSkills = $job->skill->pluck('name');
+            $projectSkills = $resume->projectSkill->pluck('name');
+            $allSkillsMatch = $jobSkills->every(function ($skill) use ($projectSkills) {
+                return $projectSkills->contains($skill);
+            });
+            if (!$allSkillsMatch) {
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求5');
+            }
+        }
+
+        //实习技术栈匹配
+        if ($job->internship_tech_stack_match == 1) {
+            $jobSkills = $job->skill->pluck('name');
+            $internshipSkills = $resume->internshipSkill->pluck('name');
+            $allSkillsMatch = $jobSkills->every(function ($skill) use ($internshipSkills) {
+                return $internshipSkills->contains($skill);
+            });
+            if (!$allSkillsMatch) {
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求6');
+            }
+        }
+
+        //全职技术栈匹配
+        if ($job->full_time_tech_stack_match == 1) {
+            $jobSkills = $job->skill->pluck('name');
+            $fulltimeSkills = $resume->fulltimeSkill->pluck('name');
+            $allSkillsMatch = $jobSkills->every(function ($skill) use ($fulltimeSkills) {
+                return $fulltimeSkills->contains($skill);
+            });
+            if (!$allSkillsMatch) {
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求7');
+            }
+        }
+
+        //全职工作最低年限要求
+        if ($resume->total_full_time_experience_years < $job->minimum_full_time_internship_experience_years) {
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求8');
+        }
+
+        //实习工作最低段数要求
+        if ($resume->total_internship_experience_number < $job->minimum_internship_experience_number) {
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求9');
+        }
+
+        //应届生毕业日期
+        if (!empty($job->graduation_date) && $resume->end_graduation_date != $job->graduation_date) {
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求10');
+        }
+
+        //是否允许已申请用户重复申请
+        if ($job->allow_duplicate_application == 0 && $resume->sendLog()->where('job_id',$job->id)->count() > 0) {
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求11');
+        }
+
+        return $this->success('成功');
     }
 
 

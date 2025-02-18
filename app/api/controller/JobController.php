@@ -2,6 +2,7 @@
 
 namespace app\api\controller;
 
+use app\admin\model\EducationalBackground;
 use app\admin\model\Job;
 use app\admin\model\Major;
 use app\admin\model\Resume;
@@ -124,9 +125,7 @@ class JobController extends Base
             })
             //学历筛选
             ->when(function (Builder $query) use ($defaultJob) {
-                return $query->whereHas('educationalBackground',function (Builder $query) use ($defaultJob) {
-                    $query->where('degree_to_job', $defaultJob->degree_requirements);
-                })->exists();
+                return EducationalBackground::where('id',$query->value('id'))->where('degree_to_job',$defaultJob->degree_requirements)->exists();
             }, function (Builder $query) use ($defaultJob) {
                 $query->whereHas('educationalBackground', function (Builder $query) use ($defaultJob) {
                     $query

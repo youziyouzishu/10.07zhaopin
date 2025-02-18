@@ -22,6 +22,8 @@ use plugin\admin\app\model\Base;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SendLog withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SendLog withoutTrashed()
  * @property-read \app\admin\model\Job|null $job
+ * @property int $user_id 用户
+ * @property-read \app\admin\model\User|null $user
  * @mixin \Eloquent
  */
 class SendLog extends Base
@@ -44,11 +46,17 @@ class SendLog extends Base
     protected $fillable = [
         'resume_id',
         'job_id',
+        'user_id'
     ];
 
     function job()
     {
         return $this->belongsTo(Job::class, 'job_id', 'id');
+    }
+
+    function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
 }

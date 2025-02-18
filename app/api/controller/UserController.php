@@ -72,7 +72,7 @@ class UserController extends Base
             'password' => Util::passwordHash($password),
             'type' => $request->user_type,
             'hr_type' => $request->user_type == 0 ? 0 : 1,
-            'salutation'=> $request->user_type == 0 ? '' : '我对您的背景非常感兴趣，您能发我一下您的简历吗'
+            'salutation'=> $request->user_type == 0 ? '' : 'I am very interested in your background. Could you share your resume with me?'
         ]);
         $token = JwtToken::generateToken([
             'id' => $user->id,
