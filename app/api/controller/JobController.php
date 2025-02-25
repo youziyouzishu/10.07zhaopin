@@ -3,16 +3,17 @@
 namespace app\api\controller;
 
 use app\admin\model\EducationalBackground;
+use app\admin\model\HrRelation;
 use app\admin\model\Job;
 use app\admin\model\Major;
 use app\admin\model\Resume;
+use app\admin\model\SendLog;
 use app\admin\model\User;
 use app\admin\model\UsersHr;
 use app\api\basic\Base;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use plugin\admin\app\common\Util;
-use plugin\email\api\Email;
 use plugin\smsbao\api\Smsbao;
 use support\Cache;
 use support\Db;
@@ -32,7 +33,6 @@ class JobController extends Base
     function index(Request $request)
     {
         $online = $request->post('online', '');#候选人在线状态:0=否,1=是
-        $send_status = $request->post('send_status', '');#投递状态 0=未投递,1=已投递,
         $skill = $request->post('skill');#岗位所需技术 array ["xxxx","xxxxx"]
         $degree = $request->post('degree');#2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位
         $top_qs_ranking = $request->post('top_qs_ranking'); #QS排名 接口获取
@@ -45,6 +45,7 @@ class JobController extends Base
         if (!$defaultJob) {
             return $this->fail('请先设置默认岗位');
         }
+        $user = User::find($request->user_id);
         $defaultJobSkill = $defaultJob->skill->pluck('name')->toArray();
 
         $defaultJobNiceSkill = $defaultJob->niceSkill->pluck('name')->toArray();
@@ -100,32 +101,32 @@ class JobController extends Base
                 });
             })
             //技术栈要求筛选
-            ->when(!empty($defaultJobSkill), function (Builder $query) use ($defaultJobSkill) {
+            ->when(!empty($defaultJobSkill) && $user->vip_status, function (Builder $query) use ($defaultJobSkill) {
                 $query->whereHas('skill', function (Builder $query) use ($defaultJobSkill) {
                     $query->whereIn('name', $defaultJobSkill);
                 }, '>=', count($defaultJobSkill));
             })
             //项目技术栈要求筛选
-            ->when($defaultJob->project_tech_stack_match == 1, function (Builder $query) use ($defaultJobSkill) {
+            ->when($defaultJob->project_tech_stack_match == 1 && $user->vip_status, function (Builder $query) use ($defaultJobSkill) {
                 $query->whereHas('projectSkill', function (Builder $query) use ($defaultJobSkill) {
                     $query->whereIn('name', $defaultJobSkill);
                 }, '>=', count($defaultJobSkill));
             })
             //实习技术栈要求筛选
-            ->when($defaultJob->internship_tech_stack_match == 1, function (Builder $query) use ($defaultJobSkill) {
+            ->when($defaultJob->internship_tech_stack_match == 1 && $user->vip_status, function (Builder $query) use ($defaultJobSkill) {
                 $query->whereHas('internshipSkill', function (Builder $query) use ($defaultJobSkill) {
                     $query->whereIn('name', $defaultJobSkill);
                 }, '>=', count($defaultJobSkill));
             })
             //全职技术栈要求筛选
-            ->when($defaultJob->full_time_tech_stack_match == 1, function (Builder $query) use ($defaultJobSkill) {
+            ->when($defaultJob->full_time_tech_stack_match == 1 && $user->vip_status, function (Builder $query) use ($defaultJobSkill) {
                 $query->whereHas('fulltimeSkill', function (Builder $query) use ($defaultJobSkill) {
                     $query->whereIn('name', $defaultJobSkill);
                 }, '>=', count($defaultJobSkill));
             })
             //学历筛选
             ->when(function (Builder $query) use ($defaultJob) {
-                return EducationalBackground::where('id',$query->value('id'))->where('degree_to_job',$defaultJob->degree_requirements)->exists();
+                return EducationalBackground::where('id', $query->value('id'))->where('degree_to_job', $defaultJob->degree_requirements)->exists();
             }, function (Builder $query) use ($defaultJob) {
                 $query->whereHas('educationalBackground', function (Builder $query) use ($defaultJob) {
                     $query
@@ -173,21 +174,7 @@ class JobController extends Base
                     $query->where('online', $online);
                 });
             })
-            //投递状态筛选
-            ->when(!empty($send_status) || $send_status == 0, function (Builder $query) use ($send_status, $defaultJob) {
-                //未投递
-                if ($send_status == 0) {
-                    $query->whereDoesntHave('sendLog', function (Builder $query) use ($defaultJob) {
-                        $query->where('job_id', $defaultJob->id);
-                    });
-                }
-                //已投递
-                if ($send_status == 1) {
-                    $query->whereHas('sendLog', function (Builder $query) use ($defaultJob) {
-                        $query->where('job_id', $defaultJob->id);
-                    });
-                }
-            })
+
             //岗位所需技术筛选
             ->when(!empty($skill), function (Builder $query) use ($skill) {
                 $query->where(function (Builder $query) use ($skill) {
@@ -246,15 +233,18 @@ class JobController extends Base
             ->when(!empty($minimum_full_time_internship_experience_years), function (Builder $query) use ($minimum_full_time_internship_experience_years) {
                 $query->where('total_full_time_experience_years', '>=', $minimum_full_time_internship_experience_years);
             })
+            //先按照用户的在线状态排序
             ->with(['user' => function ($builder) {
                 $builder->orderByDesc('online');
             }])
+            //按照岗位所需技术排序
             ->when(!empty($defaultJobNiceSkill), function (Builder $query) use ($defaultJobNiceSkill) {
                 $query->withCount(['skill' => function (Builder $query) use ($defaultJobNiceSkill) {
                     $query->whereIn('name', $defaultJobNiceSkill);
                 }])
                     ->orderByDesc('skill_count');
             })
+            //按照发布时间排序
             ->orderByDesc('updated_at');
         $rows = $query->paginate();
         return $this->success('成功', $rows);
@@ -414,17 +404,32 @@ class JobController extends Base
         $major = $request->post('major');# 数组 [{"name":"xx"},{"name":"xx"}]
         $skill = $request->post('skill'); # 数组 [{"name":"xx"},{"name":"xx"}]
         $nice_skill = $request->post('nice_skill'); # 数组 [{"name":"xx"},{"name":"xx"}]
-        if (!empty($minimum_salary) || !empty($maximum_salary)){
-            if ($minimum_salary > $maximum_salary){
+        if (!empty($minimum_salary) || !empty($maximum_salary)) {
+            if ($minimum_salary > $maximum_salary) {
                 return $this->fail('薪资范围错误');
             }
         }
-
-
         $user = User::find($request->user_id);
         if (!$user) {
             return $this->fail('用户不存在');
         }
+
+        $job_count = $user->job()->count();
+        if ($user->vip_status){
+            if ($job_count >= 15){
+                return $this->fail('vip用户最多只能创建15个岗位');
+            }
+
+        }else{
+            if ($job_count >= 3){
+                return $this->fail('非vip用户最多只能创建3个岗位');
+            }
+            if (!empty($degree_qs_ranking) || !empty($degree_us_ranking)){
+                return $this->fail('非vip用户不能设置qs_ranking和us_ranking');
+            }
+        }
+
+
         if (empty($user->company_name) || empty($user->position)) {
             return $this->fail('请先完善所属公司和岗位');
         }
@@ -497,6 +502,15 @@ class JobController extends Base
         return $this->success('成功');
     }
 
+    function getDefaultJob(Request $request)
+    {
+        $row = Job::where(['user_id' => $request->user_id, 'default' => 1])->first();
+        if (empty($row)) {
+            return $this->fail('岗位不存在');
+        }
+        return $this->success('成功', $row);
+    }
+
     #更新上架
     function publish(Request $request)
     {
@@ -535,8 +549,8 @@ class JobController extends Base
         $major = $request->post('major');# 数组 [{"name":"xx"},{"name":"xx"}]
         $skill = $request->post('skill'); # 数组 [{"name":"xx"},{"name":"xx"}]
         $nice_skill = $request->post('nice_skill'); # 数组 [{"name":"xx"},{"name":"xx"}]
-        if (!empty($minimum_salary) || !empty($maximum_salary)){
-            if ($minimum_salary > $maximum_salary){
+        if (!empty($minimum_salary) || !empty($maximum_salary)) {
+            if ($minimum_salary > $maximum_salary) {
                 return $this->fail('薪资范围错误');
             }
         }
@@ -544,6 +558,15 @@ class JobController extends Base
         if (!$row || $row->status != 0) {
             return $this->fail('岗位不存在');
         }
+
+        $user = User::find($request->user_id);
+        if (!$user->vip_status){
+            if (!empty($degree_qs_ranking) || !empty($degree_us_ranking)){
+                return $this->fail('非vip用户不能设置qs_ranking和us_ranking');
+            }
+        }
+
+
         DB::connection('plugin.admin.mysql')->beginTransaction();
         try {
             $row->major()->delete();
@@ -551,8 +574,8 @@ class JobController extends Base
             $row->niceSkill()->delete();
             $row->position_name = $position_name;
             $row->position_description = $position_description;
-            $row->minimum_salary = empty($minimum_salary) ? 0 : $minimum_salary ;
-            $row->maximum_salary = empty($maximum_salary) ? 0 : $maximum_salary ;
+            $row->minimum_salary = empty($minimum_salary) ? 0 : $minimum_salary;
+            $row->maximum_salary = empty($maximum_salary) ? 0 : $maximum_salary;
             $row->position_type = $position_type;
             $row->adult = $adult;
             $row->work_mode = $work_mode;
@@ -574,14 +597,20 @@ class JobController extends Base
             $row->from_limitation = $from_limitation;
             $row->us_citizen = $us_citizen;
             $row->allow_duplicate_application = $allow_duplicate_application;
-            $row->expire_time = empty($row->user->vip_expire_at) || $row->user->vip_expire_at->isPast()? Carbon::now()->addDays(7)->toDateTimeString() : Carbon::now()->addDays(14)->toDateTimeString();
+            $row->expire_time = empty($row->user->vip_expire_at) || $row->user->vip_expire_at->isPast() ? Carbon::now()->addDays(7)->toDateTimeString() : Carbon::now()->addDays(14)->toDateTimeString();
             $row->status = 1;
             $row->save();
             $row->major()->createMany($major);
             $row->skill()->createMany($skill);
             $row->niceSkill()->createMany($nice_skill);
+
             if ($row->allow_duplicate_application == 1) {
-                $row->sendLog()->delete();
+                $row->sendLog->each(function (SendLog $log) {
+//                    TencentIM::getInstance()->delete($log->job_user_id,1,$log->resume_user_id,'',1);
+//                    TencentIM::getInstance()->delete($log->resume_user_id,1,$log->job_user_id,'',1);
+                    $log->delete();
+                });
+
             }
             $queue = Redis::send('job', ['event' => 'job_expire', 'job_id' => $row->id], $row->expire_time->timestamp - time());
             if (!$queue) {
@@ -654,14 +683,12 @@ class JobController extends Base
             return $this->fail('未配置发信账户');
         }
         $sendUrl = Smsbao::SMSBAO_URL . "wsms?sms&u=" . $account['Username'] . "&p=" . $account['Password'] . "&m=" . urlencode('+1' . $mobile) . "&c=" . urlencode($content);
-        Client::send('job', ['event' => 'sms_add_hr', 'url' =>$sendUrl]);
+        Client::send('job', ['event' => 'sms_add_hr', 'url' => $sendUrl]);
         #发送邮箱
-        Client::send('job', ['event' => 'email_add_hr', 'email' => $email,'template' => 'invite','company_name' => $user->company_name,'position' => $user->position,'last_name' => $user->last_name,'name' => $user->name, 'url' => $url]);
+        Client::send('job', ['event' => 'email_add_hr', 'email' => $email, 'template' => 'invite', 'company_name' => $user->company_name, 'position' => $user->position, 'last_name' => $user->last_name, 'name' => $user->name, 'url' => $url]);
 
         return $this->success('成功');
     }
-
-
 
 
     function deleteJob(Request $request)
@@ -699,6 +726,30 @@ class JobController extends Base
         Client::send('job', ['event' => 'email_delete_hr_1', 'email' => $hr->user->email]);
         #发信给认证HR
         Client::send('job', ['event' => 'email_delete_hr_2', 'email' => $hr->toUser->email]);
+        return $this->success('成功');
+    }
+
+    #打招呼
+    function relation(Request $request)
+    {
+        $to_user_id = $request->post('to_user_id');
+        $row = HrRelation::where(['user_id' => $request->user_id,'to_user_id'=>$to_user_id])->first();
+        if ($row){
+            $row->updated_at = date('Y-m-d H:i:s');
+            $row->save();
+        }else{
+            HrRelation::create([
+                'user_id'=>$request->user_id,
+                'to_user_id'=>$to_user_id,
+            ]);
+        }
+        $user = User::find($to_user_id);
+        if (!$user->vip_status){
+            $count = HrRelation::where(['user_id' => $request->user_id,'to_user_id'=>$to_user_id])->whereDate('updated_at', Carbon::today())->count();
+            if ($count >= 5){
+                return $this->fail('您今天已经申请过5次');
+            }
+        }
         return $this->success('成功');
     }
 

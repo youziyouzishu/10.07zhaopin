@@ -54,6 +54,7 @@ use plugin\admin\app\model\Base;
  * @property \Illuminate\Support\Carbon|null $vip_expire_at vip过期时间
  * @property-read mixed $vip_status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \app\admin\model\SendLog> $sendLog
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \app\admin\model\SendLog> $receiveLog
  * @mixin \Eloquent
  */
 
@@ -109,7 +110,6 @@ class User extends Base
         'company_explain',
         'vip_expire_at',
         'notice_type',
-        'vip_status',
         'show_status',
         'middle_name',
         'salutation',
@@ -141,7 +141,12 @@ class User extends Base
 
     function sendLog()
     {
-        return $this->hasMany(SendLog::class,'user_id','id');
+        return $this->hasMany(SendLog::class,'resume_user_id','id');
+    }
+
+    function receiveLog()
+    {
+        return $this->hasMany(SendLog::class,'job_user_id','id');
     }
 
 

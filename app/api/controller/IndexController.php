@@ -9,14 +9,10 @@ use app\admin\model\JobMajor;
 use app\admin\model\JobNiceSkill;
 use app\admin\model\JobSkill;
 use app\admin\model\Resume;
-use app\admin\model\SendLog;
 use app\admin\model\Subscribe;
 use app\admin\model\User;
 use app\api\basic\Base;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
-use support\Db;
 use support\Request;
 use Tinywan\Jwt\Exception\JwtTokenException;
 use Tinywan\Jwt\JwtToken;
@@ -29,17 +25,9 @@ class IndexController extends Base
 
     function test()
     {
-        $userSkill = ['JAVASCRIPT'];
-
-        $rows = Job:: //技术栈筛选
-        when(function (Builder $query) {
-            return true;
-        }, function (Builder $query) use ($userSkill) {
-            $query->whereDoesntHave('skill', function ($query) use ($userSkill) {
-                $query->whereNotIn('name', $userSkill);
-            });
-        })->get();
-        return $this->success('成功', $rows);
+        $keyword = 'Full Stack';
+        $companyQuery = Company::whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%'])->orderBy('name')->get();
+        return $this->success('成功',$companyQuery);
     }
 
     public function hr(Request $request)
@@ -502,9 +490,9 @@ class IndexController extends Base
                 //是否允许已申请用户重复申请:0=false,1=true
                 ->when(function (Builder $query) {
                     return $query->value('allow_duplicate_application') == 0;
-                }, function (Builder $query) use ($resume) {
-                    $query->whereDoesntHave('sendLog', function (Builder $query) use ($resume) {
-                        $query->where('resume_id', $resume->id);
+                }, function (Builder $query) use ($request) {
+                    $query->whereDoesntHave('sendLog', function (Builder $query) use ($request) {
+                        $query->where('resume_user_id', $request->user_id);
                     });
                 })
                 //非必备技能排序

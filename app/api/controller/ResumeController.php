@@ -260,9 +260,9 @@ class ResumeController extends Base
                 //是否允许已申请用户重复申请:0=false,1=true
                 ->when(function (Builder $query) {
                     return $query->value('allow_duplicate_application') == 0;
-                }, function (Builder $query) use ($resume, $request) {
-                    $query->whereDoesntHave('sendLog', function (Builder $query) use ($resume, $request) {
-                        $query->where('user_id', $request->user_id);
+                }, function (Builder $query) use ($request) {
+                    $query->whereDoesntHave('sendLog', function (Builder $query) use ($request) {
+                        $query->where('resume_user_id', $request->user_id);
                     });
                 })
                 //非必备技能排序
@@ -340,7 +340,7 @@ class ResumeController extends Base
             return $resumeSkills->contains($skill);
         });
         if (!$allSkillsMatch) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求10');
         }
         #学历匹配
         $degreeRequirements = $job->degree_requirements;
@@ -371,7 +371,7 @@ class ResumeController extends Base
                     $usCondition;
             });
             if ($filteredEducationalBackground->isEmpty()) {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求9');
             }
         } else {
             // 不符合
@@ -384,7 +384,7 @@ class ResumeController extends Base
                     return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
                 }
             } else {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求8');
             }
         }
 
@@ -396,7 +396,7 @@ class ResumeController extends Base
                 return $projectSkills->contains($skill);
             });
             if (!$allSkillsMatch) {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求7');
             }
         }
 
@@ -408,7 +408,7 @@ class ResumeController extends Base
                 return $internshipSkills->contains($skill);
             });
             if (!$allSkillsMatch) {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求6');
             }
         }
 
@@ -420,40 +420,53 @@ class ResumeController extends Base
                 return $fulltimeSkills->contains($skill);
             });
             if (!$allSkillsMatch) {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求5');
             }
         }
 
         //全职工作最低年限要求
         if ($resume->total_full_time_experience_years < $job->minimum_full_time_internship_experience_years) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求4');
         }
 
         //实习工作最低段数要求
         if ($resume->total_internship_experience_number < $job->minimum_internship_experience_number) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求3');
         }
 
         //应届生毕业日期
         if (!empty($job->graduation_date) && $resume->end_graduation_date != $job->graduation_date) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求2');
         }
 
         //是否允许已申请用户重复申请
-        if ($job->allow_duplicate_application == 0 && $resume->sendLog()->where('job_id',$job->id)->count() > 0) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+        if ($job->allow_duplicate_application == 0 && $resume->sendLog()->where('job_id', $job->id)->count() > 0) {
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求1');
+        }
+
+        //vip功能
+        if (!$user->vip_status && $user->sendLog()->whereDate('created_at', Carbon::today())->count() >= 3) {
+            return $this->fail('今日投递次数上限');
         }
         SendLog::updateOrCreate(
             [
-                'user_id' => $request->user_id,
-                'resume_id' => $resume->id,
-                'job_id' => $job_id],
-            [
-                'user_id' => $request->user_id,
+                'resume_user_id' => $request->user_id,
                 'resume_id' => $resume->id,
                 'job_id' => $job_id,
+                'job_user_id' => $job->user_id,
+            ],
+            [
+                'resume_user_id' => $request->user_id,
+                'resume_id' => $resume->id,
+                'job_id' => $job_id,
+                'job_user_id' => $job->user_id,
             ]
         );
+        #达到招聘人数自动下架
+        if ($job->expected_number_of_candidates !== null && $job->sendLog()->count() >= $job->expected_number_of_candidates) {
+            $job->status = 0;
+            $job->save();
+        }
         return $this->success('成功');
     }
 
@@ -540,13 +553,33 @@ class ResumeController extends Base
         $full_time_experience = $request->post('full_time_experience');#全职背景
         $internship_experience = $request->post('internship_experience');#实习背景
         $skill = $request->post('skill');#技术栈[{"name":"xxx"}]
+
         if (empty($file)) {
             return $this->fail('请上传简历附件');
         }
+        $user = User::find($request->user_id);
+        if (empty($user)) {
+            return $this->fail('用户不存在');
+        }
+        $resume_count = $user->resume()->count();
+        if ($user->vip_status){
+            if ($resume_count >= 5){
+                return $this->fail('简历数量已达上限');
+            }
+        }else{
+            if ($resume_count >= 1){
+                return $this->fail('简历数量已达上限');
+            }
+        }
+
+
+
+
         $row = Resume::where(['user_id' => $request->user_id, 'name' => $name])->first();
         if ($row) {
             return $this->fail('简历名称不能重复');
         }
+
         DB::connection('plugin.admin.mysql')->beginTransaction();
         try {
             $resume = Resume::create([
@@ -925,17 +958,12 @@ class ResumeController extends Base
         $keyword = $request->post('keyword');
         try {
             // 查询公司和职位
-            $companyQuery = Company::whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%']);
-            $jobQuery = Job::whereRaw('LOWER(position_name) LIKE LOWER(?)', ['%' . $keyword . '%']);
+            $companyQuery = Company::where('name', 'LIKE', [$keyword . '%'])->orderBy('name');
+            $jobQuery = Job::where('position_name', 'LIKE', ['%' . $keyword . '%']);
 
             // 获取公司和职位的总数
             $companyCount = $companyQuery->count();
-            dump('公司数量');
-            dump($companyCount);
             $jobCount = $jobQuery->count();
-            dump('岗位数量');
-            dump($jobCount);
-
             // 计算需要获取的公司和职位数量
             $totalNeeded = 10;
             if ($companyCount >= 5 && $jobCount >= 5) {
@@ -987,13 +1015,13 @@ class ResumeController extends Base
         if (!$user) {
             return $this->fail('用户不存在');
         }
-        if (empty($user->vip_expire_at) || $user->vip_expire_at->isPast()) {
+        if (!$user->vip_status) {
             return $this->fail('请先开通VIP');
         }
 
         $count = Subscribe::where(['user_id' => $request->user_id])->count();
-        if ($count >= 19) {
-            return $this->fail('最多订阅20个');
+        if ($count >= 15) {
+            return $this->fail('最多订阅15个');
         }
         $subscribe = Subscribe::where(['user_id' => $request->user_id, 'company_name' => $row->name])->first();
         if ($subscribe) {
