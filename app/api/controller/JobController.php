@@ -55,10 +55,9 @@ class JobController extends Base
             ->whereHas('user', function (Builder $query) {
                 $query->where('show_status', 1);
             })
-            ->when($defaultJob->allow_duplicate_application == 0, function (Builder $query) use ($defaultJob) {
-                $query->whereDoesntHave('sendLog', function (Builder $query) use ($defaultJob) {
-                    $query->where('job_id', $defaultJob->id);
-                });
+            //投递记录筛选
+            ->whereDoesntHave('sendLog', function (Builder $query) use ($defaultJob) {
+                $query->where('job_id', $defaultJob->id);
             })
             // 签证担保筛选
             ->when($defaultJob->sponsorship == 0, function (Builder $query) {
@@ -126,7 +125,7 @@ class JobController extends Base
             })
             //学历筛选
             ->when(function (Builder $query) use ($defaultJob) {
-                return EducationalBackground::where('id', $query->value('id'))->where('degree_to_job', $defaultJob->degree_requirements)->exists();
+                return EducationalBackground::where('resume_id', $query->value('id'))->where('degree_to_job', $defaultJob->degree_requirements)->exists();
             }, function (Builder $query) use ($defaultJob) {
                 $query->whereHas('educationalBackground', function (Builder $query) use ($defaultJob) {
                     $query
@@ -174,7 +173,6 @@ class JobController extends Base
                     $query->where('online', $online);
                 });
             })
-
             //岗位所需技术筛选
             ->when(!empty($skill), function (Builder $query) use ($skill) {
                 $query->where(function (Builder $query) use ($skill) {
@@ -415,16 +413,16 @@ class JobController extends Base
         }
 
         $job_count = $user->job()->count();
-        if ($user->vip_status){
-            if ($job_count >= 15){
+        if ($user->vip_status) {
+            if ($job_count >= 15) {
                 return $this->fail('vip用户最多只能创建15个岗位');
             }
 
-        }else{
-            if ($job_count >= 3){
+        } else {
+            if ($job_count >= 3) {
                 return $this->fail('非vip用户最多只能创建3个岗位');
             }
-            if (!empty($degree_qs_ranking) || !empty($degree_us_ranking)){
+            if (!empty($degree_qs_ranking) || !empty($degree_us_ranking)) {
                 return $this->fail('非vip用户不能设置qs_ranking和us_ranking');
             }
         }
@@ -560,8 +558,8 @@ class JobController extends Base
         }
 
         $user = User::find($request->user_id);
-        if (!$user->vip_status){
-            if (!empty($degree_qs_ranking) || !empty($degree_us_ranking)){
+        if (!$user->vip_status) {
+            if (!empty($degree_qs_ranking) || !empty($degree_us_ranking)) {
                 return $this->fail('非vip用户不能设置qs_ranking和us_ranking');
             }
         }
@@ -603,11 +601,8 @@ class JobController extends Base
             $row->major()->createMany($major);
             $row->skill()->createMany($skill);
             $row->niceSkill()->createMany($nice_skill);
-
             if ($row->allow_duplicate_application == 1) {
                 $row->sendLog->each(function (SendLog $log) {
-//                    TencentIM::getInstance()->delete($log->job_user_id,1,$log->resume_user_id,'',1);
-//                    TencentIM::getInstance()->delete($log->resume_user_id,1,$log->job_user_id,'',1);
                     $log->delete();
                 });
 
@@ -633,7 +628,9 @@ class JobController extends Base
             ->when(!empty($status) || $status === 0, function ($query) use ($status) {
                 $query->where('status', $status);
             })
-            ->withCount('sendLog')
+            ->withCount(['sendLog' => function ($query) {
+                $query->whereRaw('wa_send_log.created_at > wa_job.updated_at');
+            }])
             ->get();
         return $this->success('成功', $rows);
     }
@@ -733,22 +730,43 @@ class JobController extends Base
     function relation(Request $request)
     {
         $to_user_id = $request->post('to_user_id');
-        $row = HrRelation::where(['user_id' => $request->user_id,'to_user_id'=>$to_user_id])->first();
-        if ($row){
-            $row->updated_at = date('Y-m-d H:i:s');
-            $row->save();
-        }else{
-            HrRelation::create([
-                'user_id'=>$request->user_id,
-                'to_user_id'=>$to_user_id,
-            ]);
-        }
+        $resume_id = $request->post('resume_id');
         $user = User::find($to_user_id);
-        if (!$user->vip_status){
-            $count = HrRelation::where(['user_id' => $request->user_id,'to_user_id'=>$to_user_id])->whereDate('updated_at', Carbon::today())->count();
-            if ($count >= 5){
+        if (!$user->vip_status) {
+            $count = HrRelation::where(['user_id' => $request->user_id, 'to_user_id' => $to_user_id])->whereDate('updated_at', Carbon::today())->count();
+            if ($count >= 5) {
                 return $this->fail('您今天已经申请过5次');
             }
+        }
+        $resume = Resume::find($resume_id);
+        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1])->first();#默认岗位
+        if (!$defaultJob) {
+            return $this->fail('请先设置默认岗位');
+        }
+        if (!$resume) {
+            return $this->fail('简历不存在');
+        }
+        $row = SendLog::where(['job_id' => $defaultJob->id, 'resume_id' => $resume->id])->first();
+        if ($row) {
+            $row->updated_at = date('Y-m-d H:i:s');
+            $row->save();
+        } else {
+            SendLog::create([
+                'resume_id' => $resume->id,
+                'resume_user_id' => $resume->user_id,
+                'job_id' => $defaultJob->id,
+                'job_user_id' => $defaultJob->user_id,
+            ]);
+        }
+        $row = HrRelation::where(['user_id' => $request->user_id, 'to_user_id' => $to_user_id])->first();
+        if ($row) {
+            $row->updated_at = date('Y-m-d H:i:s');
+            $row->save();
+        } else {
+            HrRelation::create([
+                'user_id' => $request->user_id,
+                'to_user_id' => $to_user_id,
+            ]);
         }
         return $this->success('成功');
     }

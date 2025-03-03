@@ -113,32 +113,29 @@ class ResumeController extends Base
             $us_citizen = $user->profile->us_citizen;#美国公民
             $query = $query
                 //绝密权限
-                ->when(function (Builder $query) {
-                    return $query->value('top_secret') == 1;
-                }, function (Builder $query) use ($top_secret) {
-                    return $query->where('top_secret', $top_secret);
+                ->when($top_secret == 0, function (Builder $query) {
+                    $query->where('top_secret', 0);
                 })
+
+
                 //是否成人
-                ->when(function (Builder $query) {
-                    return $query->value('adult') == 1;
-                }, function (Builder $query) use ($adult) {
-                    return $query->where('adult', $adult);
+                ->when($adult == 0, function (Builder $query) {
+                    $query->where('adult', 0);
                 })
+
                 //是否签证支持
-                ->when($sponsorship == 1, function (Builder $query) use ($sponsorship) {
-                    return $query->where('sponsorship', $sponsorship);
+                ->when($sponsorship == 0, function (Builder $query) use ($sponsorship) {
+                    $query->where('sponsorship', 0);
                 })
+
                 //受限国家
-                ->when(function (Builder $query) {
-                    return $query->value('from_limitation') == 1;
-                }, function (Builder $query) use ($from_limitation) {
-                    return $query->where('from_limitation', $from_limitation);
+                ->when($from_limitation == 0, function (Builder $query) use ($from_limitation) {
+                    $query->where('from_limitation', 0);
                 })
+
                 //是否美国公民
-                ->when(function (Builder $query) {
-                    return $query->value('us_citizen') == 1;
-                }, function (Builder $query) use ($us_citizen) {
-                    return $query->where('us_citizen', $us_citizen);
+                ->when($us_citizen == 0, function (Builder $query) use ($us_citizen) {
+                    $query->where('us_citizen', 0);
                 });
         }
 
@@ -153,7 +150,7 @@ class ResumeController extends Base
             $query = $query
                 //技术栈筛选
                 ->when(function (Builder $query) {
-                    return JobSkill::where('job_id', $query->value('id'))->exists();
+                    return $query->has('skill');
                 }, function (Builder $query) use ($skill) {
                     $query->whereDoesntHave('skill', function ($query) use ($skill) {
                         $query->whereNotIn('name', $skill);
@@ -251,20 +248,25 @@ class ResumeController extends Base
                 }, function (Builder $query) use ($resume) {
                     $query->where('minimum_internship_experience_number', '<=', $resume->total_internship_experience_number);
                 })
-                //应届生毕业日期
+
                 ->when(function (Builder $query) {
                     return $query->value('graduation_date') != null;
                 }, function (Builder $query) use ($resume) {
                     $query->where('graduation_date', $resume->end_graduation_date);
                 })
-                //是否允许已申请用户重复申请:0=false,1=true
-                ->when(function (Builder $query) {
-                    return $query->value('allow_duplicate_application') == 0;
-                }, function (Builder $query) use ($request) {
-                    $query->whereDoesntHave('sendLog', function (Builder $query) use ($request) {
-                        $query->where('resume_user_id', $request->user_id);
-                    });
+                // 应届生毕业日期
+                ->where(function (Builder $query) use ($resume) {
+                    $query->where(function (Builder $subQuery) use ($resume) {
+                        $subQuery->whereNotNull('graduation_date')
+                            ->where('graduation_date', '>=', $resume->end_graduation_date);
+                    })->orWhereNull('graduation_date');
                 })
+
+                // 是否允许已申请用户重复申请:0=false,1=true
+                ->whereDoesntHave('sendLog', function (Builder $logQuery) use ($request) {
+                    $logQuery->where('resume_user_id', $request->user_id);
+                })
+
                 //非必备技能排序
                 ->when(function (Builder $query) {
                     return JobNiceSkill::where('job_id', $query->value('id'))->exists();
@@ -371,7 +373,7 @@ class ResumeController extends Base
                     $usCondition;
             });
             if ($filteredEducationalBackground->isEmpty()) {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求9');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
             }
         } else {
             // 不符合
@@ -384,7 +386,7 @@ class ResumeController extends Base
                     return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
                 }
             } else {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求8');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
             }
         }
 
@@ -396,7 +398,7 @@ class ResumeController extends Base
                 return $projectSkills->contains($skill);
             });
             if (!$allSkillsMatch) {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求7');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
             }
         }
 
@@ -408,7 +410,7 @@ class ResumeController extends Base
                 return $internshipSkills->contains($skill);
             });
             if (!$allSkillsMatch) {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求6');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
             }
         }
 
@@ -420,28 +422,28 @@ class ResumeController extends Base
                 return $fulltimeSkills->contains($skill);
             });
             if (!$allSkillsMatch) {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求5');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
             }
         }
 
         //全职工作最低年限要求
         if ($resume->total_full_time_experience_years < $job->minimum_full_time_internship_experience_years) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求4');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
         }
 
         //实习工作最低段数要求
         if ($resume->total_internship_experience_number < $job->minimum_internship_experience_number) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求3');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
         }
 
         //应届生毕业日期
         if (!empty($job->graduation_date) && $resume->end_graduation_date != $job->graduation_date) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求2');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
         }
 
         //是否允许已申请用户重复申请
         if ($job->allow_duplicate_application == 0 && $resume->sendLog()->where('job_id', $job->id)->count() > 0) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求1');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
         }
 
         //vip功能
