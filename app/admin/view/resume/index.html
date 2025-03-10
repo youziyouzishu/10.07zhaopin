@@ -64,6 +64,11 @@
 
         <!-- 表格行工具栏 -->
         <script type="text/html" id="table-bar">
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="skill" permission="admin.resumeskill.select">技术栈</button>
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="educationalbackground" permission="admin.educationalbackground.select">教育背景</button>
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="fulltimeexperience" permission="admin.fulltimeexperience.select">全职背景</button>
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="internshipexperience" permission="admin.internshipexperience.select">实习背景</button>
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="projectexperience" permission="admin.projectexperience.select">项目背景</button>
             <button class="pear-btn pear-btn-xs tool-btn" lay-event="edit" permission="admin.resume.update">编辑</button>
             <button class="pear-btn pear-btn-xs tool-btn" lay-event="remove" permission="admin.resume.delete">删除</button>
         </script>
@@ -134,6 +139,9 @@
 					},{
 						title: "所属用户",align: "center",
 						field: "user_id",
+                        templet: function (d) {
+							return d.user? d.user.nickname : '';
+						}
 					},{
 						title: "简历名称",align: "center",
 						field: "name",
@@ -191,7 +199,7 @@
 						toolbar: "#table-bar",
 						align: "center",
 						fixed: "right",
-						width: 120,
+						width: 370,
 					}
 				];
 				
@@ -225,6 +233,16 @@
                         remove(obj);
                     } else if (obj.event === "edit") {
                         edit(obj);
+                    } else if (obj.event === "skill") {
+                        skill(obj);
+                    } else if (obj.event === "educationalbackground") {
+                        educationalbackground(obj);
+                    } else if (obj.event === "fulltimeexperience") {
+                        fulltimeexperience(obj);
+                    } else if (obj.event === "internshipexperience") {
+                        internshipexperience(obj);
+                    } else if (obj.event === "projectexperience") {
+                        projectexperience(obj);
                     }
                 });
 
@@ -301,6 +319,66 @@
                         maxmin: true,
                         area: [common.isModile()?"100%":"500px", common.isModile()?"100%":"450px"],
                         content: UPDATE_URL + "?" + PRIMARY_KEY + "=" + value
+                    });
+                }
+
+                let skill = function(obj) {
+                    let value = obj.data[PRIMARY_KEY];
+                    layer.open({
+                        type: 2,
+                        title: "技术栈",
+                        shade: 0.1,
+                        maxmin: true,
+                        area: [common.isModile()?"100%":"90%", common.isModile()?"100%":"90%"],
+                        content: "/admin/resume-skill/index" + "?" + 'resume_id' + "=" + value
+                    });
+                }
+
+                let educationalbackground = function(obj) {
+                    let value = obj.data[PRIMARY_KEY];
+                    layer.open({
+                        type: 2,
+                        title: "教育背景",
+                        shade: 0.1,
+                        maxmin: true,
+                        area: [common.isModile()?"100%":"90%", common.isModile()?"100%":"90%"],
+                        content: "/admin/educational-background/index" + "?" + 'resume_id' + "=" + value
+                    });
+                }
+
+                let fulltimeexperience = function(obj) {
+                    let value = obj.data[PRIMARY_KEY];
+                    layer.open({
+                        type: 2,
+                        title: "全职背景",
+                        shade: 0.1,
+                        maxmin: true,
+                        area: [common.isModile()?"100%":"90%", common.isModile()?"100%":"90%"],
+                        content: "/admin/full-time-experience/index" + "?" + 'resume_id' + "=" + value
+                    });
+                }
+
+                let internshipexperience = function(obj) {
+                    let value = obj.data[PRIMARY_KEY];
+                    layer.open({
+                        type: 2,
+                        title: "实习背景",
+                        shade: 0.1,
+                        maxmin: true,
+                        area: [common.isModile()?"100%":"90%", common.isModile()?"100%":"90%"],
+                        content: "/admin/internship-experience/index" + "?" + 'resume_id' + "=" + value
+                    });
+                }
+
+                let projectexperience = function(obj) {
+                    let value = obj.data[PRIMARY_KEY];
+                    layer.open({
+                        type: 2,
+                        title: "项目背景",
+                        shade: 0.1,
+                        maxmin: true,
+                        area: [common.isModile()?"100%":"90%", common.isModile()?"100%":"90%"],
+                        content: "/admin/project-experience/index" + "?" + 'resume_id' + "=" + value
                     });
                 }
 

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head>
+        <meta charset="UTF-8">
+        <title>更新页面</title>
+        <link rel="stylesheet" href="/app/admin/component/pear/css/pear.css" />
+        <link rel="stylesheet" href="/app/admin/component/jsoneditor/css/jsoneditor.css" />
+        <link rel="stylesheet" href="/app/admin/admin/css/reset.css" />
+        
+    </head>
+    <body>
+
+        <form class="layui-form">
+
+            <div class="mainBox">
+                <div class="main-container mr-5">
+                    
+
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">姓氏</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="last_name" value="" class="layui-input">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">名字</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="name" value="" class="layui-input">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">年满18</label>
+                        <div class="layui-input-block">
+                            <div name="adult" id="adult" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">绝密</label>
+                        <div class="layui-input-block">
+                            <div name="top_secret" id="top_secret" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">美国授权</label>
+                        <div class="layui-input-block">
+                            <div name="united_states_authorization" id="united_states_authorization" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">签证担保</label>
+                        <div class="layui-input-block">
+                            <div name="sponsorship" id="sponsorship" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">来自受限国家</label>
+                        <div class="layui-input-block">
+                            <div name="from_limitation" id="from_limitation" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">性别</label>
+                        <div class="layui-input-block">
+                            <div name="gender" id="gender" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">性取向</label>
+                        <div class="layui-input-block">
+                            <div name="sexual_orientation" id="sexual_orientation" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">种族</label>
+                        <div class="layui-input-block">
+                            <div name="race" id="race" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">残疾</label>
+                        <div class="layui-input-block">
+                            <div name="disability" id="disability" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">老兵</label>
+                        <div class="layui-input-block">
+                            <div name="veteran" id="veteran" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">地址</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="address" value="" class="layui-input">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">城市</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="city" value="" class="layui-input">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">国家</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="country" value="" class="layui-input">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">邮政编码</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="postal_code" value="" class="layui-input">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">美国公民</label>
+                        <div class="layui-input-block">
+                            <div name="us_citizen" id="us_citizen" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">中间名</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="middle_name" value="" class="layui-input">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">问候语</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="salutation" value="" class="layui-input">
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+
+<!--            <div class="bottom">-->
+<!--                <div class="button-container">-->
+<!--                    <button type="submit" class="pear-btn pear-btn-primary pear-btn-md" lay-submit="" lay-filter="save">-->
+<!--                        提交-->
+<!--                    </button>-->
+<!--                    <button type="reset" class="pear-btn pear-btn-md">-->
+<!--                        重置-->
+<!--                    </button>-->
+<!--                </div>-->
+<!--            </div>-->
+            
+        </form>
+
+        <script src="/app/admin/component/layui/layui.js?v=2.8.12"></script>
+        <script src="/app/admin/component/pear/pear.js"></script>
+        <script src="/app/admin/component/jsoneditor/jsoneditor.js"></script>
+        <script src="/app/admin/admin/js/permission.js"></script>
+        
+        <script>
+
+            // 相关接口
+            const PRIMARY_KEY = "id";
+            const SELECT_API = "/admin/users-profile/select" + location.search;
+            const UPDATE_API = "/admin/users-profile/update";
+
+            // 获取数据库记录
+            layui.use(["form", "util", "popup"], function () {
+                let $ = layui.$;
+                $.ajax({
+                    url: SELECT_API,
+                    dataType: "json",
+                    success: function (res) {
+                        
+                        // 给表单初始化数据
+                        layui.each(res.data[0], function (key, value) {
+                            let obj = $('*[name="'+key+'"]');
+                            if (key === "password") {
+                                obj.attr("placeholder", "不更新密码请留空");
+                                return;
+                            }
+                            if (typeof obj[0] === "undefined" || !obj[0].nodeName) return;
+                            if (obj[0].nodeName.toLowerCase() === "textarea") {
+                                obj.val(value);
+                            } else {
+                                obj.attr("value", value);
+                                obj[0].value = value;
+                            }
+                        });
+                        
+                        // 字段 年满18:0=false=否,1=true=是 adult
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#adult").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            layui.xmSelect.render({
+                                el: "#adult",
+                                name: "adult",
+                                filterable: true,
+                                initValue: initValue,
+                                data: [{"value":"0","name":"false"},{"value":"1","name":"true"}],
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
+                        
+                        // 字段 绝密:0=false=否,1=true=是 top_secret
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#top_secret").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            layui.xmSelect.render({
+                                el: "#top_secret",
+                                name: "top_secret",
+                                filterable: true,
+                                initValue: initValue,
+                                data: [{"value":"0","name":"false"},{"value":"1","name":"true"}],
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
+                        
+                        // 字段 美国授权:0=false=否,1=true=是 united_states_authorization
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#united_states_authorization").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            layui.xmSelect.render({
+                                el: "#united_states_authorization",
+                                name: "united_states_authorization",
+                                filterable: true,
+                                initValue: initValue,
+                                data: [{"value":"0","name":"false"},{"value":"1","name":"true"}],
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
+                        
+                        // 字段 签证担保:0=false=否,1=true=是 sponsorship
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#sponsorship").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            layui.xmSelect.render({
+                                el: "#sponsorship",
+                                name: "sponsorship",
+                                filterable: true,
+                                initValue: initValue,
+                                data: [{"value":"0","name":"false"},{"value":"1","name":"true"}],
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
+                        
+                        // 字段 来自受限国家:0=false=否,1=true=是 from_limitation
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#from_limitation").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            layui.xmSelect.render({
+                                el: "#from_limitation",
+                                name: "from_limitation",
+                                filterable: true,
+                                initValue: initValue,
+                                data: [{"value":"0","name":"false"},{"value":"1","name":"true"}],
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
+                        
+                        // 字段 性别:0=Male,1=Female,2=Non-binary,3=Prefer not to say gender
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#gender").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            layui.xmSelect.render({
+                                el: "#gender",
+                                name: "gender",
+                                filterable: true,
+                                initValue: initValue,
+                                data: [{"value":"0","name":"Male"},{"value":"1","name":"Female"},{"value":"2","name":"Non-binary"},{"value":"3","name":"Prefer not to say"}],
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
+                        
+                        // 字段 性取向:0=Heterosexual,1=Homosexual,2=Bisexual,3=Other,4=Prefer not to say sexual_orientation
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#sexual_orientation").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            layui.xmSelect.render({
+                                el: "#sexual_orientation",
+                                name: "sexual_orientation",
+                                filterable: true,
+                                initValue: initValue,
+                                data: [{"value":"0","name":"Heterosexual"},{"value":"1","name":"Homosexual"},{"value":"2","name":"Bisexual"},{"value":"3","name":"Other"},{"value":"4","name":"Prefer not to say"}],
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
+                        
+                        // 字段 种族:0=White,1=Black or African American,2=Asian,3=Native American or Alaska Native,4=Two or more races,5=Prefer not to say race
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#race").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            layui.xmSelect.render({
+                                el: "#race",
+                                name: "race",
+                                filterable: true,
+                                initValue: initValue,
+                                data: [{"value":"0","name":"White"},{"value":"1","name":"Black or African American"},{"value":"2","name":"Asian"},{"value":"3","name":"Native American or Alaska Native"},{"value":"4","name":"Two or more races"},{"value":"5","name":"Prefer not to say"}],
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
+                        
+                        // 字段 残疾:0=false=否,1=true=是 disability
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#disability").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            layui.xmSelect.render({
+                                el: "#disability",
+                                name: "disability",
+                                filterable: true,
+                                initValue: initValue,
+                                data: [{"value":"0","name":"false"},{"value":"1","name":"true"}],
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
+                        
+                        // 字段 老兵:0=false=否,1=true=是 veteran
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#veteran").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            layui.xmSelect.render({
+                                el: "#veteran",
+                                name: "veteran",
+                                filterable: true,
+                                initValue: initValue,
+                                data: [{"value":"0","name":"false"},{"value":"1","name":"true"}],
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
+                        
+                        // 字段 美国公民:0=false=否,1=true=是 us_citizen
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#us_citizen").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            layui.xmSelect.render({
+                                el: "#us_citizen",
+                                name: "us_citizen",
+                                filterable: true,
+                                initValue: initValue,
+                                data: [{"value":"0","name":"false"},{"value":"1","name":"true"}],
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
+                        
+                        
+                        // ajax返回失败
+                        if (res.code) {
+                            layui.popup.failure(res.msg);
+                        }
+                        
+                    }
+                });
+            });
+
+            //提交事件
+            layui.use(["form", "popup"], function () {
+                // 字段验证允许为空
+                layui.form.verify({
+                    phone: [/(^$)|^1\d{10}$/, "请输入正确的手机号"],
+                    email: [/(^$)|^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/, "邮箱格式不正确"],
+                    url: [/(^$)|(^#)|(^http(s*):\/\/[^\s]+\.[^\s]+)/, "链接格式不正确"],
+                    number: [/(^$)|^\d+$/,'只能填写数字'],
+                    date: [/(^$)|^(\d{4})[-\/](\d{1}|0\d{1}|1[0-2])([-\/](\d{1}|0\d{1}|[1-2][0-9]|3[0-1]))*$/, "日期格式不正确"],
+                    identity: [/(^$)|(^\d{15}$)|(^\d{17}(x|X|\d)$)/, "请输入正确的身份证号"]
+                });
+                layui.form.on("submit(save)", function (data) {
+                    data.field[PRIMARY_KEY] = layui.url().search[PRIMARY_KEY];
+                    layui.$.ajax({
+                        url: UPDATE_API,
+                        type: "POST",
+                        dateType: "json",
+                        data: data.field,
+                        success: function (res) {
+                            if (res.code) {
+                                return layui.popup.failure(res.msg);
+                            }
+                            return layui.popup.success("操作成功", function () {
+                                parent.refreshTable();
+                                parent.layer.close(parent.layer.getFrameIndex(window.name));
+                            });
+                        }
+                    });
+                    return false;
+                });
+            });
+
+        </script>
+
+    </body>
+
+</html>

@@ -68,9 +68,10 @@
         
         <script>
 
+            let project_id = layui.url().search['project_id'];
             // 相关常量
             const PRIMARY_KEY = "id";
-            const SELECT_API = "/admin/project-experience-skill/select";
+            const SELECT_API = "/admin/project-experience-skill/select?project_id="+project_id;
             const UPDATE_API = "/admin/project-experience-skill/update";
             const DELETE_API = "/admin/project-experience-skill/delete";
             const INSERT_URL = "/admin/project-experience-skill/insert";
@@ -100,9 +101,6 @@
 					},{
 						title: "主键",align: "center",
 						field: "id",
-					},{
-						title: "project_id",align: "center",
-						field: "project_id",
 					},{
 						title: "技术栈",align: "center",
 						field: "name",

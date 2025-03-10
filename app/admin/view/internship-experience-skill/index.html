@@ -68,9 +68,10 @@
         
         <script>
 
+            let internship_id = layui.url().search['internship_id'];
             // 相关常量
             const PRIMARY_KEY = "id";
-            const SELECT_API = "/admin/internship-experience-skill/select";
+            const SELECT_API = "/admin/internship-experience-skill/select?internship_id="+internship_id;
             const UPDATE_API = "/admin/internship-experience-skill/update";
             const DELETE_API = "/admin/internship-experience-skill/delete";
             const INSERT_URL = "/admin/internship-experience-skill/insert";
@@ -100,9 +101,6 @@
 					},{
 						title: "主键",align: "center",
 						field: "id",
-					},{
-						title: "internship_id",align: "center",
-						field: "internship_id",
 					},{
 						title: "技术栈",align: "center",
 						field: "name",

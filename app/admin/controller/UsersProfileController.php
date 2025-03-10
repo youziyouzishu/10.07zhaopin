@@ -4,18 +4,18 @@ namespace app\admin\controller;
 
 use support\Request;
 use support\Response;
-use app\admin\model\EducationalBackground;
+use app\admin\model\UsersProfile;
 use plugin\admin\app\controller\Crud;
 use support\exception\BusinessException;
 
 /**
- * 教育背景管理 
+ * 申请信息 
  */
-class EducationalBackgroundController extends Crud
+class UsersProfileController extends Crud
 {
     
     /**
-     * @var EducationalBackground
+     * @var UsersProfile
      */
     protected $model = null;
 
@@ -25,7 +25,7 @@ class EducationalBackgroundController extends Crud
      */
     public function __construct()
     {
-        $this->model = new EducationalBackground;
+        $this->model = new UsersProfile;
     }
     
     /**
@@ -34,20 +34,7 @@ class EducationalBackgroundController extends Crud
      */
     public function index(): Response
     {
-        return view('educational-background/index');
-    }
-
-    /**
-     * 查询
-     * @param Request $request
-     * @return Response
-     * @throws BusinessException
-     */
-    public function select(Request $request): Response
-    {
-        [$where, $format, $limit, $field, $order] = $this->selectInput($request);
-        $query = $this->doSelect($where, $field, $order)->with(['university']);
-        return $this->doFormat($query, $format, $limit);
+        return view('users-profile/index');
     }
 
     /**
@@ -61,7 +48,7 @@ class EducationalBackgroundController extends Crud
         if ($request->method() === 'POST') {
             return parent::insert($request);
         }
-        return view('educational-background/insert');
+        return view('users-profile/insert');
     }
 
     /**
@@ -75,7 +62,7 @@ class EducationalBackgroundController extends Crud
         if ($request->method() === 'POST') {
             return parent::update($request);
         }
-        return view('educational-background/update');
+        return view('users-profile/update');
     }
 
 }

@@ -79,9 +79,10 @@
         
         <script>
 
+            let job_id = layui.url().search['job_id'];
             // 相关常量
             const PRIMARY_KEY = "id";
-            const SELECT_API = "/admin/job-nice-skill/select";
+            const SELECT_API = "/admin/job-nice-skill/select?job_id="+job_id;
             const UPDATE_API = "/admin/job-nice-skill/update";
             const DELETE_API = "/admin/job-nice-skill/delete";
             const INSERT_URL = "/admin/job-nice-skill/insert";
@@ -113,9 +114,6 @@
 						title: "主键",align: "center",
 						field: "id",
 						sort: true,
-					},{
-						title: "所属岗位",align: "center",
-						field: "job_id",
 					},{
 						title: "名称",align: "center",
 						field: "name",

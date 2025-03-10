@@ -79,9 +79,10 @@
         
         <script>
 
+            let resume_id = layui.url().search['resume_id'];
             // 相关常量
             const PRIMARY_KEY = "id";
-            const SELECT_API = "/admin/resume-skill/select";
+            const SELECT_API = "/admin/resume-skill/select?resume_id=" + resume_id;
             const UPDATE_API = "/admin/resume-skill/update";
             const DELETE_API = "/admin/resume-skill/delete";
             const INSERT_URL = "/admin/resume-skill/insert";
@@ -113,9 +114,6 @@
 						title: "主键",align: "center",
 						field: "id",
 						sort: true,
-					},{
-						title: "所属简历",align: "center",
-						field: "resume_id",
 					},{
 						title: "名称",align: "center",
 						field: "name",

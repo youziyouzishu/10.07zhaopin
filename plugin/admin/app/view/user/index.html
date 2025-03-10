@@ -58,6 +58,7 @@
 
         <!-- 表格行工具栏 -->
         <script type="text/html" id="table-bar">
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="profile" permission="admin.usersprofile.select">申请信息</button>
             <button class="pear-btn pear-btn-xs tool-btn" lay-event="edit" permission="app.admin.user.update">编辑</button>
             <button class="pear-btn pear-btn-xs tool-btn" lay-event="remove" permission="app.admin.user.delete">删除</button>
         </script>
@@ -108,11 +109,95 @@
 						title: "手机",
 						field: "mobile",
 					},{
+                        title: "名字",
+                        field: "name",
+                    },{
+                        title: "姓氏",
+                        field: "last_name",
+                    },{
+                        title: "所属公司",align: "center",
+                        field: "company_name",
+                    },{
+                        title: "岗位",align: "center",
+                        field: "position",
+                    },{
+                        title: "公司描述",align: "center",
+                        field: "company_explain",
+                    },{
+                        title: "vip过期时间",align: "center",
+                        field: "vip_expire_at",
+                    },{
+                        title: "中间名",align: "center",
+                        field: "middle_name",
+                    },{
+                        title: "问候语",align: "center",
+                        field: "salutation",
+                    },{
+                        title: "通知类型",align: "center",
+                        field: "notice_type",
+                        templet: function (d) {
+                            let field = "notice_type";
+                            if (typeof d[field] == "undefined") return "";
+                            let items = [];
+                            layui.each((d[field] + "").split(","), function (k , v) {
+                                items.push(apiResults[field][v] || v);
+                            });
+                            return util.escape(items.join(","));
+                        }
+                    },{
+                        title: "展示简历状态",align: "center",
+                        field: "show_status",
+                        templet: function (d) {
+                            let field = "show_status";
+                            if (typeof d[field] == "undefined") return "";
+                            let items = [];
+                            layui.each((d[field] + "").split(","), function (k , v) {
+                                items.push(apiResults[field][v] || v);
+                            });
+                            return util.escape(items.join(","));
+                        }
+                    },{
+                        title: "用户类型",align: "center",
+                        field: "type",
+                        templet: function (d) {
+                            let field = "type";
+                            if (typeof d[field] == "undefined") return "";
+                            let items = [];
+                            layui.each((d[field] + "").split(","), function (k , v) {
+                                items.push(apiResults[field][v] || v);
+                            });
+                            return util.escape(items.join(","));
+                        }
+                    },{
+                        title: "HR类型",align: "center",
+                        field: "hr_type",
+                        templet: function (d) {
+                            let field = "hr_type";
+                            if (typeof d[field] == "undefined") return "";
+                            let items = [];
+                            layui.each((d[field] + "").split(","), function (k , v) {
+                                items.push(apiResults[field][v] || v);
+                            });
+                            return util.escape(items.join(","));
+                        }
+                    },{
+                        title: "在线状态",align: "center",
+                        field: "online",
+                        templet: function (d) {
+                            let field = "online";
+                            if (typeof d[field] == "undefined") return "";
+                            let items = [];
+                            layui.each((d[field] + "").split(","), function (k , v) {
+                                items.push(apiResults[field][v] || v);
+                            });
+                            return util.escape(items.join(","));
+                        }
+                    },{
 						title: "操作",
 						toolbar: "#table-bar",
 						align: "center",
 						fixed: "right",
-                        width: 130,
+                        width: 150,
 					}
 				];
 				
@@ -124,6 +209,7 @@
 				        url: SELECT_API,
 				        page: true,
 				        cols: [cols],
+                        cellMinWidth: 120,
 				        skin: "line",
 				        size: "lg",
 				        toolbar: "#table-toolbar",
@@ -142,6 +228,11 @@
 				// 获取表格中下拉或树形组件数据
 				let apis = [];
 				let apiResults = {};
+                apiResults['type'] = ['求职者','招聘者'];
+                apiResults['hr_type'] = ['Null','Regular HR','Verified HR','Super HR'];
+                apiResults['online'] = ['否','是'];
+                apiResults['notice_type'] = ['邮箱通知','短信通知'];
+                apiResults['show_status'] = ['false','true'];
 				let count = apis.length;
 				layui.each(apis, function (k, item) {
 				    let [field, url] = item;
@@ -180,6 +271,8 @@
                         remove(obj);
                     } else if (obj.event === "edit") {
                         edit(obj);
+                    } else if (obj.event === "profile") {
+                        profile(obj);
                     }
                 });
 
@@ -244,6 +337,17 @@
                         shade: 0.1,
                         area: [common.isModile()?"100%":"500px", common.isModile()?"100%":"450px"],
                         content: UPDATE_URL + "?" + PRIMARY_KEY + "=" + value
+                    });
+                }
+
+                let profile = function(obj) {
+                    let value = obj.data[PRIMARY_KEY];
+                    layer.open({
+                        type: 2,
+                        title: "申请信息",
+                        shade: 0.1,
+                        area: [common.isModile()?"100%":"500px", common.isModile()?"100%":"500px"],
+                        content: "/admin/users-profile/update" + "?" + 'user_id' + "=" + value
                     });
                 }
 

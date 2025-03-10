@@ -79,9 +79,10 @@
         
         <script>
 
+            let full_id = layui.url().search['full_id'];
             // 相关常量
             const PRIMARY_KEY = "id";
-            const SELECT_API = "/admin/full-time-experience-skill/select";
+            const SELECT_API = "/admin/full-time-experience-skill/select?full_id="+full_id;
             const UPDATE_API = "/admin/full-time-experience-skill/update";
             const DELETE_API = "/admin/full-time-experience-skill/delete";
             const INSERT_URL = "/admin/full-time-experience-skill/insert";
@@ -113,9 +114,6 @@
 						title: "主键",align: "center",
 						field: "id",
 						sort: true,
-					},{
-						title: "full_id",align: "center",
-						field: "full_id",
 					},{
 						title: "技术栈",align: "center",
 						field: "name",

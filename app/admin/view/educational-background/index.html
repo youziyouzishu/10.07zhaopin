@@ -88,10 +88,11 @@
         <script src="/app/admin/admin/js/common.js"></script>
         
         <script>
+            let resume_id = layui.url().search['resume_id'];
 
             // 相关常量
             const PRIMARY_KEY = "id";
-            const SELECT_API = "/admin/educational-background/select";
+            const SELECT_API = "/admin/educational-background/select?resume_id=" + resume_id;
             const UPDATE_API = "/admin/educational-background/update";
             const DELETE_API = "/admin/educational-background/delete";
             const INSERT_URL = "/admin/educational-background/insert";
@@ -174,11 +175,11 @@
 						title: "id",align: "center",
 						field: "id",
 					},{
-						title: "所属简历",align: "center",
-						field: "resume_id",
-					},{
 						title: "所属学校",align: "center",
 						field: "university_id",
+                        templet: function (d) {
+                            return d.university? d.university.name : "";
+						}
 					},{
 						title: "专业",align: "center",
 						field: "major",
@@ -213,10 +214,10 @@
 						title: "毕业时间",align: "center",
 						field: "graduation_date",
 					},{
-						title: "总绩点（满分4.0）",align: "center",
+						title: "总绩点",align: "center",
 						field: "cumulative_gpa",
 					},{
-						title: "专业绩点（满分4.0）",align: "center",
+						title: "专业绩点",align: "center",
 						field: "major_gpa",
 					},{
 						title: "QS排名",align: "center",
@@ -269,6 +270,7 @@
 				    url: SELECT_API,
 				    page: true,
 				    cols: [cols],
+                    cellMinWidth: 100,
 				    skin: "line",
 				    size: "lg",
 				    toolbar: "#table-toolbar",

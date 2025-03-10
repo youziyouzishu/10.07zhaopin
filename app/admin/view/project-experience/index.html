@@ -57,6 +57,7 @@
 
         <!-- 表格行工具栏 -->
         <script type="text/html" id="table-bar">
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="projectexperienceskill" permission="admin.projectexperienceskill.select">技术栈</button>
             <button class="pear-btn pear-btn-xs tool-btn" lay-event="edit" permission="admin.projectexperience.update">编辑</button>
             <button class="pear-btn pear-btn-xs tool-btn" lay-event="remove" permission="admin.projectexperience.delete">删除</button>
         </script>
@@ -68,9 +69,10 @@
         
         <script>
 
+            let resume_id = layui.url().search['resume_id'];
             // 相关常量
             const PRIMARY_KEY = "id";
-            const SELECT_API = "/admin/project-experience/select";
+            const SELECT_API = "/admin/project-experience/select?resume_id="+resume_id;
             const UPDATE_API = "/admin/project-experience/update";
             const DELETE_API = "/admin/project-experience/delete";
             const INSERT_URL = "/admin/project-experience/insert";
@@ -100,9 +102,6 @@
 					},{
 						title: "id",align: "center",
 						field: "id",
-					},{
-						title: "所属简历",align: "center",
-						field: "resume_id",
 					},{
 						title: "项目名称",align: "center",
 						field: "project_name",
@@ -161,6 +160,8 @@
                         remove(obj);
                     } else if (obj.event === "edit") {
                         edit(obj);
+                    } else if (obj.event === "projectexperienceskill") {
+                        projectexperienceskill(obj);
                     }
                 });
 
@@ -237,6 +238,18 @@
                         maxmin: true,
                         area: [common.isModile()?"100%":"500px", common.isModile()?"100%":"450px"],
                         content: UPDATE_URL + "?" + PRIMARY_KEY + "=" + value
+                    });
+                }
+
+                let projectexperienceskill = function(obj) {
+                    let value = obj.data[PRIMARY_KEY];
+                    layer.open({
+                        type: 2,
+                        title: "修改",
+                        shade: 0.1,
+                        maxmin: true,
+                        area: [common.isModile()?"100%":"90%", common.isModile()?"100%":"90%"],
+                        content: "/admin/project-experience-skill/index" + "?" + 'project_id' + "=" + value
                     });
                 }
 
