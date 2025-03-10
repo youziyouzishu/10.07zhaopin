@@ -1,0 +1,368 @@
+
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head>
+        <meta charset="utf-8">
+        <title>浏览页面</title>
+        <link rel="stylesheet" href="/app/admin/component/pear/css/pear.css" />
+        <link rel="stylesheet" href="/app/admin/admin/css/reset.css" />
+    </head>
+    <body class="pear-container">
+    
+        <!-- 顶部查询表单 -->
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <form class="layui-form top-search-from">
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">默认</label>
+                        <div class="layui-input-block">
+                            <div name="default" id="default" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">最高学历</label>
+                        <div class="layui-input-block">
+                            <div name="top_degree" id="top_degree" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item layui-inline">
+                        <label class="layui-form-label"></label>
+                        <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="table-query">
+                            <i class="layui-icon layui-icon-search"></i>查询
+                        </button>
+                        <button type="reset" class="pear-btn pear-btn-md" lay-submit lay-filter="table-reset">
+                            <i class="layui-icon layui-icon-refresh"></i>重置
+                        </button>
+                    </div>
+                    <div class="toggle-btn">
+                        <a class="layui-hide">展开<i class="layui-icon layui-icon-down"></i></a>
+                        <a class="layui-hide">收起<i class="layui-icon layui-icon-up"></i></a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- 数据表格 -->
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <table id="data-table" lay-filter="data-table"></table>
+            </div>
+        </div>
+
+        <!-- 表格顶部工具栏 -->
+        <script type="text/html" id="table-toolbar">
+            <button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add" permission="admin.resume.insert">
+                <i class="layui-icon layui-icon-add-1"></i>新增
+            </button>
+            <button class="pear-btn pear-btn-danger pear-btn-md" lay-event="batchRemove" permission="admin.resume.delete">
+                <i class="layui-icon layui-icon-delete"></i>删除
+            </button>
+        </script>
+
+        <!-- 表格行工具栏 -->
+        <script type="text/html" id="table-bar">
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="edit" permission="admin.resume.update">编辑</button>
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="remove" permission="admin.resume.delete">删除</button>
+        </script>
+
+        <script src="/app/admin/component/layui/layui.js?v=2.8.12"></script>
+        <script src="/app/admin/component/pear/pear.js"></script>
+        <script src="/app/admin/admin/js/permission.js"></script>
+        <script src="/app/admin/admin/js/common.js"></script>
+        
+        <script>
+
+            // 相关常量
+            const PRIMARY_KEY = "id";
+            const SELECT_API = "/admin/resume/select";
+            const UPDATE_API = "/admin/resume/update";
+            const DELETE_API = "/admin/resume/delete";
+            const INSERT_URL = "/admin/resume/insert";
+            const UPDATE_URL = "/admin/resume/update";
+            
+            // 字段 默认:0=false=否,1=true=是 default
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#default").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#default",
+                    name: "default",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"0","name":"false"},{"value":"1","name":"true"}],
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
+            
+            // 字段 最高学历:0=High School or Below=高中及以下,1=Associate Degree=副学士学位,2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位 top_degree
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#top_degree").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#top_degree",
+                    name: "top_degree",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"0","name":"High School or Below"},{"value":"1","name":"Associate Degree"},{"value":"2","name":"Bachelor&#039;s Degree"},{"value":"3","name":"Master&#039;s Degree"},{"value":"4","name":"Doctoral Degree"}],
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
+            
+            // 表格渲染
+            layui.use(["table", "form", "common", "popup", "util"], function() {
+                let table = layui.table;
+                let form = layui.form;
+                let $ = layui.$;
+                let common = layui.common;
+                let util = layui.util;
+                
+				// 表头参数
+				let cols = [
+					{
+						type: "checkbox",
+						align: "center"
+					},{
+						title: "id",align: "center",
+						field: "id",
+					},{
+						title: "所属用户",align: "center",
+						field: "user_id",
+					},{
+						title: "简历名称",align: "center",
+						field: "name",
+					},{
+						title: "简历附件",align: "center",
+						field: "file",
+						templet: function (d) {
+							return '<a href="' + encodeURI(d['file']) + '" target="_blank">' + util.escape(d['file']) + '</a>';
+						}
+					},{
+						title: "默认",align: "center",
+						field: "default",
+						templet: function (d) {
+							let field = "default";
+							if (typeof d[field] == "undefined") return "";
+							let items = [];
+							layui.each((d[field] + "").split(","), function (k , v) {
+								items.push(apiResults[field][v] || v);
+							});
+							return util.escape(items.join(","));
+						}
+					},{
+						title: "全职工作年限",align: "center",
+						field: "total_full_time_experience_years",
+					},{
+						title: "实习段数",align: "center",
+						field: "total_internship_experience_number",
+					},{
+						title: "毕业日期",align: "center",
+						field: "end_graduation_date",
+					},{
+						title: "最高学历",align: "center",
+						field: "top_degree",
+						templet: function (d) {
+							let field = "top_degree";
+							if (typeof d[field] == "undefined") return "";
+							let items = [];
+							layui.each((d[field] + "").split(","), function (k , v) {
+								items.push(apiResults[field][v] || v);
+							});
+							return util.escape(items.join(","));
+						}
+					},{
+						title: "创建时间",align: "center",
+						field: "created_at",
+					},{
+						title: "更新时间",align: "center",
+						field: "updated_at",
+					},{
+						title: "删除时间",align: "center",
+						field: "deleted_at",
+						hide: true,
+					},{
+						title: "操作",
+						toolbar: "#table-bar",
+						align: "center",
+						fixed: "right",
+						width: 120,
+					}
+				];
+				
+				// 渲染表格
+				table.render({
+				    elem: "#data-table",
+				    url: SELECT_API,
+				    page: true,
+				    cols: [cols],
+				    skin: "line",
+				    size: "lg",
+				    toolbar: "#table-toolbar",
+				    autoSort: false,
+				    defaultToolbar: [{
+				        title: "刷新",
+				        layEvent: "refresh",
+				        icon: "layui-icon-refresh",
+				    }, "filter", "print", "exports"],
+				    done: function () {
+				        layer.photos({photos: 'div[lay-id="data-table"]', anim: 5});
+				    }
+				});
+				
+				// 获取表格中下拉或树形组件数据
+				let apiResults = {};
+				apiResults["default"] = ["false","true"];
+				apiResults["top_degree"] = ["High School or Below","Associate Degree","Bachelor's Degree","Master's Degree","Doctoral Degree"];
+                // 编辑或删除行事件
+                table.on("tool(data-table)", function(obj) {
+                    if (obj.event === "remove") {
+                        remove(obj);
+                    } else if (obj.event === "edit") {
+                        edit(obj);
+                    }
+                });
+
+                // 表格顶部工具栏事件
+                table.on("toolbar(data-table)", function(obj) {
+                    if (obj.event === "add") {
+                        add();
+                    } else if (obj.event === "refresh") {
+                        refreshTable();
+                    } else if (obj.event === "batchRemove") {
+                        batchRemove(obj);
+                    }
+                });
+
+                // 表格顶部搜索事件
+                form.on("submit(table-query)", function(data) {
+                    table.reload("data-table", {
+                        page: {
+                            curr: 1
+                        },
+                        where: data.field
+                    })
+                    return false;
+                });
+                
+                // 表格顶部搜索重置事件
+                form.on("submit(table-reset)", function(data) {
+                    table.reload("data-table", {
+                        where: []
+                    })
+                });
+                
+                // 字段允许为空
+                form.verify({
+                    phone: [/(^$)|^1\d{10}$/, "请输入正确的手机号"],
+                    email: [/(^$)|^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/, "邮箱格式不正确"],
+                    url: [/(^$)|(^#)|(^http(s*):\/\/[^\s]+\.[^\s]+)/, "链接格式不正确"],
+                    number: [/(^$)|^\d+$/,'只能填写数字'],
+                    date: [/(^$)|^(\d{4})[-\/](\d{1}|0\d{1}|1[0-2])([-\/](\d{1}|0\d{1}|[1-2][0-9]|3[0-1]))*$/, "日期格式不正确"],
+                    identity: [/(^$)|(^\d{15}$)|(^\d{17}(x|X|\d)$)/, "请输入正确的身份证号"]
+                });
+
+                // 表格排序事件
+                table.on("sort(data-table)", function(obj){
+                    table.reload("data-table", {
+                        initSort: obj,
+                        scrollPos: "fixed",
+                        where: {
+                            field: obj.field,
+                            order: obj.type
+                        }
+                    });
+                });
+
+                // 表格新增数据
+                let add = function() {
+                    layer.open({
+                        type: 2,
+                        title: "新增",
+                        shade: 0.1,
+                        maxmin: true,
+                        area: [common.isModile()?"100%":"500px", common.isModile()?"100%":"450px"],
+                        content: INSERT_URL
+                    });
+                }
+
+                // 表格编辑数据
+                let edit = function(obj) {
+                    let value = obj.data[PRIMARY_KEY];
+                    layer.open({
+                        type: 2,
+                        title: "修改",
+                        shade: 0.1,
+                        maxmin: true,
+                        area: [common.isModile()?"100%":"500px", common.isModile()?"100%":"450px"],
+                        content: UPDATE_URL + "?" + PRIMARY_KEY + "=" + value
+                    });
+                }
+
+                // 删除一行
+                let remove = function(obj) {
+                    return doRemove(obj.data[PRIMARY_KEY]);
+                }
+
+                // 删除多行
+                let batchRemove = function(obj) {
+                    let checkIds = common.checkField(obj, PRIMARY_KEY);
+                    if (checkIds === "") {
+                        layui.popup.warning("未选中数据");
+                        return false;
+                    }
+                    doRemove(checkIds.split(","));
+                }
+
+                // 执行删除
+                let doRemove = function (ids) {
+                    let data = {};
+                    data[PRIMARY_KEY] = ids;
+                    layer.confirm("确定删除?", {
+                        icon: 3,
+                        title: "提示"
+                    }, function(index) {
+                        layer.close(index);
+                        let loading = layer.load();
+                        $.ajax({
+                            url: DELETE_API,
+                            data: data,
+                            dataType: "json",
+                            type: "post",
+                            success: function(res) {
+                                layer.close(loading);
+                                if (res.code) {
+                                    return layui.popup.failure(res.msg);
+                                }
+                                return layui.popup.success("操作成功", refreshTable);
+                            }
+                        })
+                    });
+                }
+
+                // 刷新表格数据
+                window.refreshTable = function() {
+                    table.reloadData("data-table", {
+                        scrollPos: "fixed",
+                        done: function (res, curr) {
+                            if (curr > 1 && res.data && !res.data.length) {
+                                curr = curr - 1;
+                                table.reloadData("data-table", {
+                                    page: {
+                                        curr: curr
+                                    },
+                                })
+                            }
+                        }
+                    });
+                }
+            })
+
+        </script>
+    </body>
+</html>

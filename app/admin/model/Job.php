@@ -6,7 +6,7 @@ use plugin\admin\app\model\Base;
 
 
 /**
- * 
+ *
  *
  * @property int $id
  * @property int $user_id 用户
@@ -117,7 +117,7 @@ class Job extends Base
     {
         return $this->hasMany(JobMajor::class, 'job_id', 'id');
     }
-    
+
 
     function user()
     {

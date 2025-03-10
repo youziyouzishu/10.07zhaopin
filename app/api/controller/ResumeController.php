@@ -41,7 +41,7 @@ class ResumeController extends Base
         $province = $request->post('province', '');#所属州
         $position_type = $request->post('position_type', '');#工作类型
         $work_mode = $request->post('work_mode', '');#工作模式:0=In-Person=现场办公,1=Hybrid=混合办公,2=Remote=远程办公
-        $keyword = $request->post('keyword', '');#关键词
+        $keyword =$request->post('keyword', '');#关键词
         $resume_id = $request->post('resume_id', '');
         try {
             $request->user_id = JwtToken::getCurrentId();
@@ -53,6 +53,10 @@ class ResumeController extends Base
             $subscribeStatus = Subscribe::where(['user_id' => $request->user_id, 'company_name' => $company->name])->first();
             $company->setAttribute('is_subscribe', $subscribeStatus ? 1 : 0);
         }
+
+
+        #指定简历
+        $resume = Resume::where(['user_id' => $request->user_id, 'id' => $resume_id])->first();#默认简历
 
         $query = Job::where(['status' => 1])
             ->with(['user' => function ($query) {
@@ -82,8 +86,11 @@ class ResumeController extends Base
             })
             //关键字搜索筛选
             ->when(!empty($keyword), function (Builder $query) use ($keyword) {
-                $query->where('position_name', $keyword)->orWhereHas('user', function (Builder $query) use ($keyword) {
-                    $query->where('company_name', $keyword);
+                $query->where(function ($query) use ($keyword) {
+                    $query->where('position_name', $keyword)
+                        ->orWhereHas('user', function (Builder $query) use ($keyword) {
+                            $query->where('company_name', $keyword);
+                        });
                 });
             })
             //认证HR筛选
@@ -104,43 +111,6 @@ class ResumeController extends Base
             ->when(!empty($work_mode) || $work_mode == 0, function (Builder $query) use ($work_mode) {
                 $query->where('work_mode', $work_mode);
             });
-        $user = User::find($request->user_id); #个人信息
-        if (!empty($user) && !empty($user->profile)) {
-            $top_secret = $user->profile->top_secret;#绝密权限
-            $adult = $user->profile->adult;#是否成人
-            $sponsorship = $user->profile->sponsorship;#是否签证支持
-            $from_limitation = $user->profile->from_limitation;#受限国家
-            $us_citizen = $user->profile->us_citizen;#美国公民
-            $query = $query
-                //绝密权限
-                ->when($top_secret == 0, function (Builder $query) {
-                    $query->where('top_secret', 0);
-                })
-
-
-                //是否成人
-                ->when($adult == 0, function (Builder $query) {
-                    $query->where('adult', 0);
-                })
-
-                //是否签证支持
-                ->when($sponsorship == 0, function (Builder $query) use ($sponsorship) {
-                    $query->where('sponsorship', 0);
-                })
-
-                //受限国家
-                ->when($from_limitation == 0, function (Builder $query) use ($from_limitation) {
-                    $query->where('from_limitation', 0);
-                })
-
-                //是否美国公民
-                ->when($us_citizen == 0, function (Builder $query) use ($us_citizen) {
-                    $query->where('us_citizen', 0);
-                });
-        }
-
-        #指定简历
-        $resume = Resume::where(['user_id' => $request->user_id, 'id' => $resume_id])->first();#默认简历
         if (!empty($resume)) {
             //如果有指定简历
             $fulltimeSkill = $resume->fulltimeSkill->pluck('name')->toArray(); #全职技能
@@ -248,7 +218,6 @@ class ResumeController extends Base
                 }, function (Builder $query) use ($resume) {
                     $query->where('minimum_internship_experience_number', '<=', $resume->total_internship_experience_number);
                 })
-
                 ->when(function (Builder $query) {
                     return $query->value('graduation_date') != null;
                 }, function (Builder $query) use ($resume) {
@@ -276,6 +245,41 @@ class ResumeController extends Base
                     }])
                         ->orderByDesc('nice_skill_count');
                 });
+
+            $user = User::find($request->user_id); #个人信息
+            if (!empty($user) && !empty($user->profile)) {
+                $top_secret = $user->profile->top_secret;#绝密权限
+                $adult = $user->profile->adult;#是否成人
+                $sponsorship = $user->profile->sponsorship;#是否签证支持
+                $from_limitation = $user->profile->from_limitation;#受限国家
+                $us_citizen = $user->profile->us_citizen;#美国公民
+                $query = $query
+                    //绝密权限
+                    ->when($top_secret == 0, function (Builder $query) {
+                        $query->where('top_secret', 0);
+                    })
+
+
+                    //是否成人
+                    ->when($adult == 0, function (Builder $query) {
+                        $query->where('adult', 0);
+                    })
+
+                    //是否签证支持
+                    ->when($sponsorship == 0, function (Builder $query) use ($sponsorship) {
+                        $query->where('sponsorship', 0);
+                    })
+
+                    //受限国家
+                    ->when($from_limitation == 0, function (Builder $query) use ($from_limitation) {
+                        $query->where('from_limitation', 0);
+                    })
+
+                    //是否美国公民
+                    ->when($us_citizen == 0, function (Builder $query) use ($us_citizen) {
+                        $query->where('us_citizen', 0);
+                    });
+            }
 
         }
 
@@ -564,17 +568,15 @@ class ResumeController extends Base
             return $this->fail('用户不存在');
         }
         $resume_count = $user->resume()->count();
-        if ($user->vip_status){
-            if ($resume_count >= 5){
+        if ($user->vip_status) {
+            if ($resume_count >= 5) {
                 return $this->fail('简历数量已达上限');
             }
-        }else{
-            if ($resume_count >= 1){
+        } else {
+            if ($resume_count >= 1) {
                 return $this->fail('简历数量已达上限');
             }
         }
-
-
 
 
         $row = Resume::where(['user_id' => $request->user_id, 'name' => $name])->first();

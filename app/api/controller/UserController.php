@@ -169,6 +169,7 @@ class UserController extends Base
         return $this->success();
     }
 
+    #更改密码
     function changePassword(Request $request)
     {
         $newpassword = $request->post('newpassword');
@@ -287,6 +288,7 @@ class UserController extends Base
         $reason = $request->post('reason');
         $explain = $request->post('explain');
         $images = $request->post('images');
+
         Report::create([
             'user_id' => $request->user_id,
             'to_user_id' => $to_user_id,

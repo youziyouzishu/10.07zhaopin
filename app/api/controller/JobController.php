@@ -366,7 +366,6 @@ class JobController extends Base
 
 
     #创建岗位
-
     function createJob(Request $request)
     {
         try {
@@ -502,7 +501,7 @@ class JobController extends Base
 
     function getDefaultJob(Request $request)
     {
-        $row = Job::where(['user_id' => $request->user_id, 'default' => 1])->first();
+        $row = Job::with(['user'])->where(['user_id' => $request->user_id, 'default' => 1])->first();
         if (empty($row)) {
             return $this->fail('岗位不存在');
         }

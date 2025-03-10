@@ -5,7 +5,7 @@ namespace app\admin\model;
 use plugin\admin\app\model\Base;
 
 /**
- * 
+ *
  *
  * @property int $id 主键
  * @property int $job_id 所属岗位

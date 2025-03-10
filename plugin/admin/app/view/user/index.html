@@ -20,109 +20,7 @@
                             <input type="number" name="id" value="" class="layui-input">
                         </div>
                     </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">用户名</label>
-                        <div class="layui-input-block">
-                            <input type="text" name="username" value="" class="layui-input">
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">昵称</label>
-                        <div class="layui-input-block">
-                            <input type="text" name="nickname" value="" class="layui-input">
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">性别</label>
-                        <div class="layui-input-block">
-                            <div name="sex" id="sex" value="" ></div>
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">邮箱</label>
-                        <div class="layui-input-block">
-                            <input type="text" name="email" value="" class="layui-input">
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">手机</label>
-                        <div class="layui-input-block">
-                            <input type="text" name="mobile" value="" class="layui-input">
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">等级</label>
-                        <div class="layui-input-block">
-                            <input type="number" name="level" value="" class="layui-input">
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">生日</label>
-                        <div class="layui-input-block">
-                            <div class="layui-input-block" id="birthday">
-                                <input type="text" autocomplete="off" name="birthday[]" id="birthday-date-start" class="layui-input inline-block" placeholder="开始时间">
-                                -
-                                <input type="text" autocomplete="off" name="birthday[]" id="birthday-date-end" class="layui-input inline-block" placeholder="结束时间">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">余额(元)</label>
-                        <div class="layui-input-block">
-                            <input type="number" name="money" value="" class="layui-input">
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">积分</label>
-                        <div class="layui-input-block">
-                            <input type="number" name="score" value="" class="layui-input">
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">登录时间</label>
-                        <div class="layui-input-block">
-                            <div class="layui-input-block" id="last_time">
-                                <input type="text" autocomplete="off" name="last_time[]" id="last_time-date-start" class="layui-input inline-block" placeholder="开始时间">
-                                -
-                                <input type="text" autocomplete="off" name="last_time[]" id="last_time-date-end" class="layui-input inline-block" placeholder="结束时间">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">登录ip</label>
-                        <div class="layui-input-block">
-                            <input type="text" name="last_ip" value="" class="layui-input">
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">注册时间</label>
-                        <div class="layui-input-block">
-                            <div class="layui-input-block" id="join_time">
-                                <input type="text" autocomplete="off" name="join_time[]" id="join_time-date-start" class="layui-input inline-block" placeholder="开始时间">
-                                -
-                                <input type="text" autocomplete="off" name="join_time[]" id="join_time-date-end" class="layui-input inline-block" placeholder="结束时间">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">注册ip</label>
-                        <div class="layui-input-block">
-                            <input type="text" name="join_ip" value="" class="layui-input">
-                        </div>
-                    </div>
+
                     
                     <div class="layui-form-item layui-inline">
                         <label class="layui-form-label"></label>
@@ -178,56 +76,6 @@
             const INSERT_URL = "/app/admin/user/insert";
             const UPDATE_URL = "/app/admin/user/update";
             
-            // 字段 性别 sex
-            layui.use(["jquery", "xmSelect", "popup"], function() {
-                layui.$.ajax({
-                    url: "/app/admin/dict/get/sex",
-                    dataType: "json",
-                    success: function (res) {
-                        let value = layui.$("#sex").attr("value");
-                        let initValue = value ? value.split(",") : [];
-                        layui.xmSelect.render({
-                            el: "#sex",
-                            name: "sex",
-                            initValue: initValue,
-                            data: res.data,
-                            model: {"icon":"hidden","label":{"type":"text"}},
-                            clickClose: true,
-                            radio: true,
-                        });
-                        if (res.code) {
-                            layui.popup.failure(res.msg);
-                        }
-                    }
-                });
-            });
-            
-            // 字段 生日 birthday
-            layui.use(["laydate"], function() {
-                layui.laydate.render({
-                    elem: "#birthday",
-                    range: ["#birthday-date-start", "#birthday-date-end"],
-                });
-            })
-            
-            // 字段 登录时间 last_time
-            layui.use(["laydate"], function() {
-                layui.laydate.render({
-                    elem: "#last_time",
-                    range: ["#last_time-date-start", "#last_time-date-end"],
-                    type: "datetime",
-                });
-            })
-            
-            // 字段 注册时间 join_time
-            layui.use(["laydate"], function() {
-                layui.laydate.render({
-                    elem: "#join_time",
-                    range: ["#join_time-date-start", "#join_time-date-end"],
-                    type: "datetime",
-                });
-            })
-            
             // 表格渲染
             layui.use(["table", "form", "common", "popup", "util"], function() {
                 let table = layui.table;
@@ -245,27 +93,8 @@
 						field: "id",
 						sort: true,
 					},{
-						title: "用户名",
-						field: "username",
-					},{
 						title: "昵称",
 						field: "nickname",
-					},{
-						title: "密码",
-						field: "password",
-						hide: true,
-					},{
-						title: "性别",
-						field: "sex",
-						templet: function (d) {
-							let field = "sex";
-							if (typeof d[field] == "undefined") return "";
-							let items = [];
-							layui.each((d[field] + "").split(","), function (k , v) {
-								items.push(apiResults[field][v] || v);
-							});
-							return util.escape(items.join(","));
-						}
 					},{
 						title: "头像",
 						field: "avatar",
@@ -278,78 +107,6 @@
 					},{
 						title: "手机",
 						field: "mobile",
-					},{
-						title: "等级",
-						field: "level",
-						hide: true,
-					},{
-						title: "生日",
-						field: "birthday",
-						hide: true,
-					},{
-						title: "余额(元)",
-						field: "money",
-						hide: true,
-					},{
-						title: "积分",
-						field: "score",
-						hide: true,
-					},{
-						title: "登录时间",
-						field: "last_time",
-						hide: true,
-					},{
-						title: "登录ip",
-						field: "last_ip",
-						hide: true,
-					},{
-						title: "注册时间",
-						field: "join_time",
-						hide: true,
-					},{
-						title: "注册ip",
-						field: "join_ip",
-						hide: true,
-					},{
-						title: "token",
-						field: "token",
-						hide: true,
-					},{
-						title: "创建时间",
-						field: "created_at",
-						hide: true,
-					},{
-						title: "更新时间",
-						field: "updated_at",
-						hide: true,
-					},{
-						title: "角色",
-						field: "role",
-						hide: true,
-					},{
-						title: "禁用",
-						field: "status",
-						templet: function (d) {
-							let field = "status";
-							form.on("switch("+field+")", function (data) {
-								let load = layer.load();
-								let postData = {};
-								postData[field] = data.elem.checked ? 1 : 0;
-								postData[PRIMARY_KEY] = this.value;
-								$.post(UPDATE_API, postData, function (res) {
-									layer.close(load);
-									if (res.code) {
-                                        return layui.popup.failure(res.msg, function () {
-                                            data.elem.checked = !data.elem.checked;
-                                            form.render();
-                                        });
-				                    }
-									return layui.popup.success("操作成功");
-								})
-							});
-							let checked = d[field] === 1 ? "checked" : "";
-							return '<input type="checkbox" value="'+util.escape(d[PRIMARY_KEY])+'" lay-filter="'+util.escape(field)+'" lay-skin="switch" lay-text="'+util.escape('')+'" '+checked+'/>';
-						}
 					},{
 						title: "操作",
 						toolbar: "#table-bar",
@@ -384,9 +141,7 @@
 				
 				// 获取表格中下拉或树形组件数据
 				let apis = [];
-				apis.push(["sex", "/app/admin/dict/get/sex"]);
 				let apiResults = {};
-				apiResults["sex"] = [];
 				let count = apis.length;
 				layui.each(apis, function (k, item) {
 				    let [field, url] = item;

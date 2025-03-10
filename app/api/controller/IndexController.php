@@ -25,9 +25,8 @@ class IndexController extends Base
 
     function test()
     {
-        $keyword = 'Full Stack';
-        $companyQuery = Company::whereRaw('LOWER(name) LIKE LOWER(?)', [$keyword . '%'])->orderBy('name')->get();
-        return $this->success('成功',$companyQuery);
+
+
     }
 
     public function hr(Request $request)
