@@ -734,7 +734,7 @@ class JobController extends Base
         if (!$user->vip_status) {
             $count = HrRelation::where(['user_id' => $request->user_id, 'to_user_id' => $to_user_id])->whereDate('updated_at', Carbon::today())->count();
             if ($count >= 5) {
-                return $this->fail('您今天已经申请过5次');
+                return $this->fail('您今⽇的候选⼈联系名额已满，请充值 VIP');
             }
         }
         $resume = Resume::find($resume_id);

@@ -2,11 +2,13 @@
 
 namespace app\queue\redis;
 
+use app\admin\model\Resume;
 use app\admin\model\User;
 use Carbon\Carbon;
 use plugin\admin\app\model\Option;
 use plugin\email\api\Email;
 use plugin\smsbao\api\Smsbao;
+use Webman\RedisQueue\Client;
 use Webman\RedisQueue\Consumer;
 
 class Job implements Consumer
@@ -23,11 +25,9 @@ class Job implements Consumer
         $event = $data['event'];
         if ($event == 'job_expire') {
             $job = \app\admin\model\Job::find($data['job_id']);
-            if ($job) {
-                if ($job->expire_time < time() && $job->status == 1) {
-                    $job->status = 0;
-                    $job->save();
-                }
+            if ($job && $job->expire_time->isPast() && $job->status == 1) {
+                $job->status = 0;
+                $job->save();
             }
         }
         if ($event == 'email_add_hr') {
@@ -69,40 +69,56 @@ class Job implements Consumer
         if ($event == 'email_captcha') {
             $email = $data['email'];
             $code = $data['code'];
-            Email::sendByTemplate($email, 'captcha', ['code'=>$code]);
+            Email::sendByTemplate($email, 'captcha', ['code' => $code]);
         }
         if ($event == 'sms_captcha') {
             $mobile = $data['mobile'];
             $code = $data['code'];
-            Smsbao::send($mobile,$code);
+            Smsbao::send($mobile, $code);
         }
-        if ($event == 'email_delete_hr_1'){
+        if ($event == 'email_delete_hr_1') {
             $email = $data['email'];
             Email::sendByTemplate($email, 'delete_hr_1');
         }
-        if ($event == 'email_delete_hr_2'){
+        if ($event == 'email_delete_hr_2') {
             $email = $data['email'];
             Email::sendByTemplate($email, 'delete_hr_2');
         }
 
-        if ($event == 'vip_expire'){
+        if ($event == 'vip_expire') {
             $user_id = $data['user_id'];
             $user = User::find($user_id);
-            if ($user && !$user->vip_status){
+            if ($user && !$user->vip_status) {
                 $name = 'admin_config';
                 $config = Option::where('name', $name)->value('value');
                 $config = json_decode($config);
                 $current_time = Carbon::now();
-                if ($user->type == 0){
+                if ($user->type == 0) {
                     $add_days = $config->resume_compensation_day;
                     $compensation = Carbon::parse($config->resume_compensation);
-                }else{
+                } else {
                     $add_days = $config->hr_compensation_day;
                     $compensation = Carbon::parse($config->hr_compensation);
                 }
-                if ($current_time->isBefore($compensation)){
-                    $user->vip_expire_at =$current_time->addDays($add_days);
+                if ($current_time->isBefore($compensation)) {
+                    #进行活动补偿
+                    $user->vip_expire_at = $current_time->addDays($add_days);
                     $user->save();
+                    Client::send('job', ['event' => 'vip_expire', 'user_id' => $user->id], $user->vip_expire_at->timestamp - time());
+                } else {
+                    #这次是真过期了
+                    if ($user->type == 0) {
+                        #如果是求职者  简历只保留默认的  其余的删除
+                        $user->resume()->where(['default' => 0])->delete();
+                    } else {
+                        #如果是HR  简历只保留最后修改的三个  其余的下架
+                        $user->job()
+                            ->where(['status' => 1])
+                            ->orderBy('updated_at', 'desc')
+                            ->offset(3)->update([
+                                'status' => 0
+                            ]);
+                    }
                 }
             }
 

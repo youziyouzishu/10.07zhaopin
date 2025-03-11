@@ -311,6 +311,12 @@ class ResumeController extends Base
         if (!$user) {
             return $this->fail('用户不存在');
         }
+
+        //vip功能
+        if (!$user->vip_status && $user->sendLog()->whereDate('created_at', Carbon::today())->count() >= 3) {
+            return $this->fail('您今⽇的岗位投递次数已达上限，请充值 VIP 以解锁⽆限投递权限。');
+        }
+
         if (empty($user->profile)) {
             return $this->fail('请先完善个人资料');
         }
@@ -450,10 +456,7 @@ class ResumeController extends Base
             return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
         }
 
-        //vip功能
-        if (!$user->vip_status && $user->sendLog()->whereDate('created_at', Carbon::today())->count() >= 3) {
-            return $this->fail('今日投递次数上限');
-        }
+
         SendLog::updateOrCreate(
             [
                 'resume_user_id' => $request->user_id,
@@ -574,7 +577,7 @@ class ResumeController extends Base
             }
         } else {
             if ($resume_count >= 1) {
-                return $this->fail('简历数量已达上限');
+                return $this->fail('您当前为普通候选⼈，如需上传更多简历，请开通 VIP 会员。”');
             }
         }
 
@@ -1025,7 +1028,7 @@ class ResumeController extends Base
 
         $count = Subscribe::where(['user_id' => $request->user_id])->count();
         if ($count >= 15) {
-            return $this->fail('最多订阅15个');
+            return $this->fail('您已达到 VIP 订阅上限（15 家公司）。');
         }
         $subscribe = Subscribe::where(['user_id' => $request->user_id, 'company_name' => $row->name])->first();
         if ($subscribe) {
