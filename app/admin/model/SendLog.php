@@ -28,6 +28,7 @@ use plugin\admin\app\model\Base;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SendLog withoutTrashed()
  * @property-read \app\admin\model\User|null $jobUser
  * @property-read \app\admin\model\User|null $resumeUser
+ * @property-read \app\admin\model\Resume|null $resume
  * @mixin \Eloquent
  */
 class SendLog extends Base
@@ -57,6 +58,11 @@ class SendLog extends Base
     function job()
     {
         return $this->belongsTo(Job::class, 'job_id', 'id');
+    }
+
+    function resume()
+    {
+        return $this->belongsTo(Resume::class, 'resume_id', 'id');
     }
 
     function jobUser()

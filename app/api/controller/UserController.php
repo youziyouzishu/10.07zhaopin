@@ -8,8 +8,11 @@ use app\admin\model\Sms;
 use app\admin\model\User;
 use app\admin\model\UsersHr;
 use app\admin\model\UsersProfile;
+use app\admin\model\VipOrders;
 use app\api\basic\Base;
+use Carbon\Carbon;
 use plugin\admin\app\common\Util;
+use plugin\admin\app\model\Option;
 use support\Request;
 use Tencent\TLSSigAPIv2;
 use Tinywan\Jwt\JwtToken;
@@ -74,6 +77,30 @@ class UserController extends Base
             'hr_type' => $request->user_type == 0 ? 0 : 1,
             'salutation'=> $request->user_type == 0 ? '' : 'I am very interested in your background. Could you share your resume with me?'
         ]);
+
+        #注册送会员
+        $name = 'admin_config';
+        $config = Option::where('name', $name)->value('value');
+        $config = json_decode($config);
+        $current_time = Carbon::now();
+        if ($request->user_type == 0) {
+            list($resume_activity_start, $resume_activity_end) = explode(' - ', $config->resume_activity);
+            $add_days = $config->resume_activity_day;
+            $activity_start = Carbon::parse($resume_activity_start);
+            $activity_end = Carbon::parse($resume_activity_end);
+        }else{
+            list($hr_activity_start, $hr_activity_end) = explode(' - ', $config->hr_activity);
+            $add_days = $config->hr_activity_day;
+            $activity_start = Carbon::parse($hr_activity_start);
+            $activity_end = Carbon::parse($hr_activity_end);
+        }
+
+        if ($current_time->between($activity_start, $activity_end)) {
+            $user->vip_expire_at = $current_time->addDays($add_days);
+            $user->save();
+            Client::send('job', ['event' => 'vip_expire', 'user_id' => $user->id], $user->vip_expire_at->timestamp - time());
+        }
+
         $token = JwtToken::generateToken([
             'id' => $user->id,
             'client' => JwtToken::TOKEN_CLIENT_MOBILE
@@ -132,6 +159,8 @@ class UserController extends Base
             $request->user_id = $user_id;
         }
         $row = User::with(['profile'])->find($request->user_id);
+
+
         return $this->success('成功', $row);
     }
 

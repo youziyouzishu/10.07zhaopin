@@ -3,6 +3,8 @@
 namespace app\queue\redis;
 
 use app\admin\model\User;
+use Carbon\Carbon;
+use plugin\admin\app\model\Option;
 use plugin\email\api\Email;
 use plugin\smsbao\api\Smsbao;
 use Webman\RedisQueue\Consumer;
@@ -81,6 +83,29 @@ class Job implements Consumer
         if ($event == 'email_delete_hr_2'){
             $email = $data['email'];
             Email::sendByTemplate($email, 'delete_hr_2');
+        }
+
+        if ($event == 'vip_expire'){
+            $user_id = $data['user_id'];
+            $user = User::find($user_id);
+            if ($user && !$user->vip_status){
+                $name = 'admin_config';
+                $config = Option::where('name', $name)->value('value');
+                $config = json_decode($config);
+                $current_time = Carbon::now();
+                if ($user->type == 0){
+                    $add_days = $config->resume_compensation_day;
+                    $compensation = Carbon::parse($config->resume_compensation);
+                }else{
+                    $add_days = $config->hr_compensation_day;
+                    $compensation = Carbon::parse($config->hr_compensation);
+                }
+                if ($current_time->isBefore($compensation)){
+                    $user->vip_expire_at =$current_time->addDays($add_days);
+                    $user->save();
+                }
+            }
+
         }
 
     }

@@ -14,14 +14,7 @@
 
             <div class="mainBox">
                 <div class="main-container mr-5">
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">用户</label>
-                        <div class="layui-input-block">
-                            <input type="number" name="user_id" value="" class="layui-input">
-                        </div>
-                    </div>
-                    
+
                     <div class="layui-form-item">
                         <label class="layui-form-label">岗位名称</label>
                         <div class="layui-input-block">
@@ -218,12 +211,7 @@
                         </div>
                     </div>
                     
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">默认</label>
-                        <div class="layui-input-block">
-                            <div name="default" id="default" value="" ></div>
-                        </div>
-                    </div>
+
                     
                     <div class="layui-form-item">
                         <label class="layui-form-label">过期时间</label>
@@ -525,28 +513,13 @@
                                 name: "allow_duplicate_application",
                                 filterable: true,
                                 initValue: initValue,
-                                model: {"icon":"hidden","label":{"type":"text"}},
-                                clickClose: true,
-                                radio: true,
-                            })
-                        });
-                        
-                        // 字段 默认:0=false=否,1=true=是 default
-                        layui.use(["jquery", "xmSelect"], function() {
-                            let value = layui.$("#default").attr("value");
-                            let initValue = value ? value.split(",") : [];
-                            layui.xmSelect.render({
-                                el: "#default",
-                                name: "default",
-                                filterable: true,
-                                initValue: initValue,
                                 data: [{"value":"0","name":"false"},{"value":"1","name":"true"}],
                                 model: {"icon":"hidden","label":{"type":"text"}},
                                 clickClose: true,
                                 radio: true,
                             })
                         });
-                        
+
                         // 字段 过期时间 expire_time
                         layui.use(["laydate"], function() {
                             layui.laydate.render({

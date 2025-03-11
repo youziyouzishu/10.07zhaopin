@@ -6,7 +6,7 @@ use plugin\admin\app\model\Base;
 
 
 /**
- *
+ * 
  *
  * @property int $id
  * @property int $user_id 用户

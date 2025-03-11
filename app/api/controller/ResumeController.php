@@ -1061,8 +1061,7 @@ class ResumeController extends Base
     #投递记录
     function getSendLogList(Request $request)
     {
-        $resume_ids = Resume::where(['user_id' => $request->user_id])->pluck('id');
-        $rows = SendLog::withTrashed()->whereIn('resume_id', $resume_ids)->orderBy('id', 'desc')->paginate();
+        $rows = SendLog::withTrashed()->with(['resume','job','jobUser'])->where('resume_user_id', $request->user_id)->orderBy('id', 'desc')->paginate();
         return $this->success('成功', $rows);
     }
 

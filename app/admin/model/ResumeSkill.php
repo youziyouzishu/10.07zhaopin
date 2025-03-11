@@ -7,7 +7,7 @@ use plugin\admin\app\model\Base;
 
 
 /**
- *
+ * 
  *
  * @property int $id 主键
  * @property int $resume_id 所属简历
