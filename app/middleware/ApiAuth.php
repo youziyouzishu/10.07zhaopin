@@ -19,6 +19,7 @@ class ApiAuth implements MiddlewareInterface
         if (!empty($user_type) && !in_array($user_type, [0, 1])) {
             return json(['code' => 0, 'msg' => '非法访问', 'data' => []]);
         }
+
         $request->user_type = $user_type;
 
         $request->user_id = 0;

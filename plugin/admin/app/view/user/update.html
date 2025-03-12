@@ -28,6 +28,21 @@
                     </div>
 
 
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">会员过期时间</label>
+                        <div class="layui-input-block">
+                            <input type="text" class="layui-input" name="vip_expire_at" id="vip_expire_at">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">禁用</label>
+                        <div class="layui-input-block">
+                            <input type="checkbox" id="status" lay-filter="status" lay-skin="switch" />
+                            <input type="text" style="display:none" name="status" value="0" />
+                        </div>
+                    </div>
+
                     
                 </div>
             </div>
@@ -107,6 +122,25 @@
                                 }
                             });
                         });
+
+
+                        layui.use(function(){
+                            var laydate = layui.laydate;
+                            laydate.render({
+                                elem: "#vip_expire_at",
+                                type: "datetime",
+                                lang:'en'
+                            })
+                        });
+
+                        // 字段 禁用 status
+                        layui.use(["form"], function() {
+                            layui.$("#status").attr("checked", layui.$('input[name="status"]').val() != 0);
+                            layui.form.render();
+                            layui.form.on("switch(status)", function(data) {
+                                layui.$('input[name="status"]').val(this.checked ? 1 : 0);
+                            });
+                        })
 
                         // ajax产生错误
                         if (res.code) {

@@ -28,7 +28,14 @@
                             </button>
                         </div>
                     </div>
-                    
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">类型</label>
+                        <div class="layui-input-block">
+                            <div name="type" id="type" value="" ></div>
+                        </div>
+                    </div>
+
                     <div class="layui-form-item">
                         <label class="layui-form-label">权重</label>
                         <div class="layui-input-block">
@@ -116,7 +123,21 @@
                                 }
                             });
                         });
-                        
+
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#type").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            layui.xmSelect.render({
+                                el: "#type",
+                                name: "type",
+                                filterable: true,
+                                initValue: initValue,
+                                data: [{"value":"1","name":"HR"},{"value":"2","name":"候选人"}],
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
                         
                         // ajax返回失败
                         if (res.code) {

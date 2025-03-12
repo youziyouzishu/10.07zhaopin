@@ -27,6 +27,13 @@
                             </button>
                         </div>
                     </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">类型</label>
+                        <div class="layui-input-block">
+                            <div name="type" id="type" value="0" ></div>
+                        </div>
+                    </div>
                     
                     <div class="layui-form-item">
                         <label class="layui-form-label">权重</label>
@@ -61,7 +68,24 @@
 
             // 相关接口
             const INSERT_API = "/admin/banner/insert";
-            
+
+
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#type").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#type",
+                    name: "type",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"1","name":"HR"},{"value":"2","name":"候选人"}],
+                    value: "1",
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
+
             // 字段 封面 image
             layui.use(["upload", "layer"], function() {
                 let input = layui.$("#image").prev();

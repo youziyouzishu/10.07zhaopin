@@ -7,6 +7,7 @@ use support\exception\BusinessException;
 use support\Request;
 use support\Response;
 use Throwable;
+use Webman\RedisQueue\Client;
 
 /**
  * 用户管理 
@@ -61,6 +62,13 @@ class UserController extends Crud
     public function update(Request $request): Response
     {
         if ($request->method() === 'POST') {
+            $id = $request->post('id');
+            $vip_expire_at = $request->post('vip_expire_at');
+            $user = $this->model->find($id);
+
+            if (!empty($vip_expire_at) && $vip_expire_at != $user->vip_expire_at ){
+                Client::send('job', ['event' => 'vip_expire', 'user_id' => $user->id], $user->vip_expire_at->timestamp - time());
+            }
             return parent::update($request);
         }
         return raw_view('user/update');

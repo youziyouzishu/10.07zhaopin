@@ -89,17 +89,19 @@ class Job implements Consumer
             $user_id = $data['user_id'];
             $user = User::find($user_id);
             if ($user && !$user->vip_status) {
+                #进行vip过期处理
                 $name = 'admin_config';
                 $config = Option::where('name', $name)->value('value');
                 $config = json_decode($config);
                 $current_time = Carbon::now();
                 if ($user->type == 0) {
                     $add_days = $config->resume_compensation_day;
-                    $compensation = Carbon::parse($config->resume_compensation);
+                    $compensation = $config->resume_compensation;
                 } else {
                     $add_days = $config->hr_compensation_day;
-                    $compensation = Carbon::parse($config->hr_compensation);
+                    $compensation = $config->hr_compensation;
                 }
+                $compensation = Carbon::parse($compensation);
                 if ($current_time->isBefore($compensation)) {
                     #进行活动补偿
                     $user->vip_expire_at = $current_time->addDays($add_days);
@@ -115,7 +117,8 @@ class Job implements Consumer
                         $user->job()
                             ->where(['status' => 1])
                             ->orderBy('updated_at', 'desc')
-                            ->offset(3)->update([
+                            ->offset(3)
+                            ->update([
                                 'status' => 0
                             ]);
                     }

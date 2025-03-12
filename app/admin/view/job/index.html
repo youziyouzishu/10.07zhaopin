@@ -413,11 +413,23 @@
 						field: "id",
 					},{
 						title: "用户",align: "center",
-						field: "user_id",
+						field: "user.nickname",
                         templet: function (d) {
                             return d.user ? d.user.nickname : "";
 						}
 					},{
+                        title: "所属公司",align: "center",
+                        field: "user.company_name",
+                        templet: function (d) {
+                            return d.user ? d.user.company_name : "";
+                        }
+                    },{
+                        title: "公司描述",align: "center",
+                        field: "user.company_explain",
+                        templet: function (d) {
+                            return d.user ? d.user.company_explain : "";
+                        }
+                    },{
 						title: "岗位名称",align: "center",
 						field: "position_name",
 					},{
@@ -632,7 +644,7 @@
 						toolbar: "#table-bar",
 						align: "center",
 						fixed: "right",
-						width: 230,
+						width: 270,
 					}
 				];
 				

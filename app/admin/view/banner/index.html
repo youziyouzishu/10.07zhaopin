@@ -10,7 +10,36 @@
     <body class="pear-container">
     
         <!-- 顶部查询表单 -->
-        
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <form class="layui-form top-search-from">
+
+
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">类型</label>
+                        <div class="layui-input-block">
+                            <div name="type" id="type" value="" ></div>
+                        </div>
+                    </div>
+
+
+                    <div class="layui-form-item layui-inline">
+                        <label class="layui-form-label"></label>
+                        <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="table-query">
+                            <i class="layui-icon layui-icon-search"></i>查询
+                        </button>
+                        <button type="reset" class="pear-btn pear-btn-md" lay-submit lay-filter="table-reset">
+                            <i class="layui-icon layui-icon-refresh"></i>重置
+                        </button>
+                    </div>
+                    <div class="toggle-btn">
+                        <a class="layui-hide">展开<i class="layui-icon layui-icon-down"></i></a>
+                        <a class="layui-hide">收起<i class="layui-icon layui-icon-up"></i></a>
+                    </div>
+                </form>
+            </div>
+        </div>
         
         <!-- 数据表格 -->
         <div class="layui-card">
@@ -49,7 +78,25 @@
             const DELETE_API = "/admin/banner/delete";
             const INSERT_URL = "/admin/banner/insert";
             const UPDATE_URL = "/admin/banner/update";
-            
+
+
+
+            // 字段 状态:0=Removal=下架,1=Publish=上架 status
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#type").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#type",
+                    name: "type",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"1","name":"HR"},{"value":"2","name":"候选人"}],
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
+
             // 表格渲染
             layui.use(["table", "form", "common", "popup", "util"], function() {
                 let table = layui.table;
@@ -73,6 +120,18 @@
 							return '<img src="'+encodeURI(d['image'])+'" style="max-width:32px;max-height:32px;" alt="" />'
 						}
 					},{
+                        title: "类型",align: "center",
+                        field: "type",
+                        templet: function (d) {
+                            let field = "type";
+                            if (typeof d[field] == "undefined") return "";
+                            let items = [];
+                            layui.each((d[field] + "").split(","), function (k , v) {
+                                items.push(apiResults[field][v] || v);
+                            });
+                            return util.escape(items.join(","));
+                        }
+                    },{
 						title: "权重",align: "center",
 						field: "weigh",
 					},{
@@ -109,8 +168,10 @@
 				        layer.photos({photos: 'div[lay-id="data-table"]', anim: 5});
 				    }
 				});
-				
-				
+                // 获取表格中下拉或树形组件数据
+                let apiResults = {};
+                apiResults["type"] = {"1":"HR","2":"候选人"};
+
                 // 编辑或删除行事件
                 table.on("tool(data-table)", function(obj) {
                     if (obj.event === "remove") {

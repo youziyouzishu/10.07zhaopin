@@ -21,7 +21,22 @@
                         </div>
                     </div>
 
-                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">手机号</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="mobile" value="" class="layui-input">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">邮箱</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="email" value="" class="layui-input">
+                        </div>
+                    </div>
+
+
+
                     <div class="layui-form-item layui-inline">
                         <label class="layui-form-label"></label>
                         <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="table-query">
@@ -193,6 +208,31 @@
                             return util.escape(items.join(","));
                         }
                     },{
+                        title: "禁用",
+                        field: "status",
+                        templet: function (d) {
+                            let field = "status";
+                            form.on("switch("+field+")", function (data) {
+                                let load = layer.load();
+                                let postData = {};
+                                postData[field] = data.elem.checked ? 1 : 0;
+                                postData[PRIMARY_KEY] = this.value;
+                                $.post(UPDATE_API, postData, function (res) {
+                                    layer.close(load);
+                                    if (res.code) {
+                                        return layui.popup.failure(res.msg, function () {
+                                            data.elem.checked = !data.elem.checked;
+                                            form.render();
+                                        });
+                                    }
+                                    return layui.popup.success("操作成功");
+                                })
+                            });
+                            let checked = d[field] === 1 ? "checked" : "";
+                            return '<input type="checkbox" value="'+util.escape(d[PRIMARY_KEY])+'" lay-filter="'+util.escape(field)+'" lay-skin="switch" lay-text="'+util.escape('')+'" '+checked+'/>';
+                        }
+                    },
+                    {
 						title: "操作",
 						toolbar: "#table-bar",
 						align: "center",
