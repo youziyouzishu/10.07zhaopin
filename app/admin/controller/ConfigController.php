@@ -3,7 +3,6 @@
 namespace app\admin\controller;
 
 use Carbon\Carbon;
-use plugin\admin\app\common\Util;
 use plugin\admin\app\model\Option;
 use support\Request;
 use support\Response;

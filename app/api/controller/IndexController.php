@@ -26,8 +26,8 @@ class IndexController extends Base
 
     function index()
     {
-        $current_time = Carbon::now();
-        dump($current_time->addDays(10));
+        $a = ['aaa'=>1];
+        dump($a);
     }
     
     function test()
