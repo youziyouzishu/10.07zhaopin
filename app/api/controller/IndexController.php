@@ -26,7 +26,7 @@ class IndexController extends Base
 
     function index()
     {
-        $a = ['aaa'=>1];
+        $a = ['aaa'=>2];
         dump($a);
     }
     
