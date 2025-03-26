@@ -141,6 +141,25 @@ class TencentIM
         return $response->getBody()->getContents();
     }
 
+
+    #删除会话
+    function adminGetroammsg(string $Operator_Account, string $Peer_Account, int $MaxCnt , int $MinTime, int $MaxTime )
+    {
+        $url = $this->url . '/v4/openim/admin_getroammsg?sdkappid=' . $this->app_id . '&identifier=' . $this->identifier . '&usersig=' . $this->usersig . '&random=' . mt_rand(0, 4294967295) . '&contenttype=json';
+        $data = [
+            'Operator_Account' => $Operator_Account,
+            'Peer_Account' => $Peer_Account,
+            'MaxCnt'=>$MaxCnt,
+            'MinTime'=>$MinTime,
+            'MaxTime'=>$MaxTime,
+        ];
+
+        $response = $this->client->post($url, [
+            'json' => $data
+        ]);
+        return $response->getBody()->getContents();
+    }
+
     /**
      * 获取资料
      * @param $uid

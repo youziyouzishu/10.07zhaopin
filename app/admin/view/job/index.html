@@ -13,7 +13,22 @@
         <div class="layui-card">
             <div class="layui-card-body">
                 <form class="layui-form top-search-from">
-                    
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">岗位名</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="position_name"  class="layui-input">
+                        </div>
+                    </div>
+
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">用户</label>
+                        <div class="layui-input-block">
+                            <div name="user_id" id="user_id" value="" ></div>
+                        </div>
+                    </div>
+
                     <div class="layui-form-item">
                         <label class="layui-form-label">是否只招聘成年人</label>
                         <div class="layui-input-block">
@@ -170,7 +185,69 @@
             const DELETE_API = "/admin/job/delete";
             const INSERT_URL = "/admin/job/insert";
             const UPDATE_URL = "/admin/job/update";
-            
+
+
+            layui.use(["jquery", "xmSelect", "popup"], function() {
+                let value = layui.$("#user_id").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: '#user_id',
+                    name: "user_id",
+                    //配置搜索
+                    filterable: true,
+                    //配置远程分页
+                    clickClose: true,
+                    radio: true,
+                    remoteSearch:true,
+                    initValue: initValue,
+                    template({ item, sels, name, value }){
+                        return item.value + '<span style="position: absolute; right: 10px; color: #8799a3">'+item.name+'</span>'
+                    },
+                    prop: {
+                        name: 'name',
+                        value: 'value',
+                    },
+                    //数据处理
+                    remoteMethod: function(val, cb, show, pageIndex){
+                        let results = [];
+                        let emailDone = false;
+                        let mobileDone = false;
+                        // 搜索邮箱
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                email: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                emailDone = true;
+                                if (mobileDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+
+                        // 搜索手机号
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                mobile: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                mobileDone = true;
+                                if (emailDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+                    }
+                })
+
+            });
+
             // 字段 是否只招聘成年人:0=false=否,1=true=是 adult
             layui.use(["jquery", "xmSelect"], function() {
                 let value = layui.$("#adult").attr("value");
@@ -422,6 +499,18 @@
                         field: "user.company_name",
                         templet: function (d) {
                             return d.user ? d.user.company_name : "";
+                        }
+                    },{
+                        title: "HR手机号",align: "center",
+                        field: "user.mobile",
+                        templet: function (d) {
+                            return d.user ? d.user.mobile : "";
+                        }
+                    },{
+                        title: "HR邮箱",align: "center",
+                        field: "user.email",
+                        templet: function (d) {
+                            return d.user ? d.user.email : "";
                         }
                     },{
                         title: "公司描述",align: "center",

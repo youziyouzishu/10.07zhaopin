@@ -485,6 +485,12 @@ class ResumeController extends Base
     {
         $job_id = $request->post('job_id');
         $row = Job::with(['user'])->find($job_id);
+        try {
+            $request->user_id = JwtToken::getCurrentId();
+        } catch (JwtTokenException $e) {
+            $request->user_id = 0;
+        }
+        $row->setAttribute('is_send',$row->sendLog()->where('resume_user_id',$request->user_id)->exists());
         return $this->success('成功', $row);
     }
 

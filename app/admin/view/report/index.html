@@ -13,7 +13,36 @@
         <div class="layui-card">
             <div class="layui-card-body">
                 <form class="layui-form top-search-from">
-                    
+
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">主键</label>
+                        <div class="layui-input-block">
+                            <input type="number" name="id"  class="layui-input">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">举报人</label>
+                        <div class="layui-input-block">
+                            <div id="user_mobile" value="" ></div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">被举报人</label>
+                        <div class="layui-input-block">
+                            <div name="to_user_id" id="to_user_mobile" value="" ></div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">状态</label>
+                        <div class="layui-input-block">
+                            <div name="status" id="status" value="" ></div>
+                        </div>
+                    </div>
+
                     <div class="layui-form-item">
                         <label class="layui-form-label">创建时间</label>
                         <div class="layui-input-block">
@@ -57,6 +86,7 @@
 
         <!-- 表格行工具栏 -->
         <script type="text/html" id="table-bar">
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="chatLog" permission="admin.report.chatlog">聊天记录</button>
             <button class="pear-btn pear-btn-xs tool-btn" lay-event="edit" permission="admin.report.update">编辑</button>
             <button class="pear-btn pear-btn-xs tool-btn" lay-event="remove" permission="admin.report.delete">删除</button>
         </script>
@@ -75,7 +105,145 @@
             const DELETE_API = "/admin/report/delete";
             const INSERT_URL = "/admin/report/insert";
             const UPDATE_URL = "/admin/report/update";
-            
+
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#status").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#status",
+                    name: "status",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"0","name":"处理中"},{"value":"1","name":"已处理"}],
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
+
+
+            layui.use(["jquery", "xmSelect", "popup"], function() {
+                let value = layui.$("#user_mobile").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: '#user_mobile',
+                    name: "user_id",
+                    //配置搜索
+                    filterable: true,
+                    //配置远程分页
+                    clickClose: true,
+                    radio: true,
+                    remoteSearch:true,
+                    initValue: initValue,
+                    template({ item, sels, name, value }){
+                        return item.value + '<span style="position: absolute; right: 10px; color: #8799a3">'+item.name+'</span>'
+                    },
+                    prop: {
+                        name: 'name',
+                        value: 'value',
+                    },
+                    //数据处理
+                    remoteMethod: function(val, cb, show, pageIndex){
+                        let results = [];
+                        let emailDone = false;
+                        let mobileDone = false;
+                        // 搜索邮箱
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                email: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                emailDone = true;
+                                if (mobileDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+
+                        // 搜索手机号
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                mobile: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                mobileDone = true;
+                                if (emailDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+
+                    }
+                })
+            });
+
+
+            layui.use(["jquery", "xmSelect", "popup"], function() {
+                let value = layui.$("#to_user_mobile").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: '#to_user_mobile',
+                    name: "to_user_id",
+                    //配置搜索
+                    filterable: true,
+                    //配置远程分页
+                    clickClose: true,
+                    radio: true,
+                    remoteSearch:true,
+                    initValue: initValue,
+                    template({ item, sels, name, value }){
+                        return item.value + '<span style="position: absolute; right: 10px; color: #8799a3">'+item.name+'</span>'
+                    },
+                    prop: {
+                        name: 'name',
+                        value: 'value',
+                    },
+                    //数据处理
+                    remoteMethod: function(val, cb, show, pageIndex){
+                        let results = [];
+                        let emailDone = false;
+                        let mobileDone = false;
+                        // 搜索邮箱
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                email: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                emailDone = true;
+                                if (mobileDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+
+                        // 搜索手机号
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                mobile: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                mobileDone = true;
+                                if (emailDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+                    }
+                })
+            });
+
             // 字段 创建时间 created_at
             layui.use(["laydate"], function() {
                 layui.laydate.render({
@@ -101,12 +269,42 @@
 						title: "主键",align: "center",
 						field: "id",
 					},{
-						title: "举报人",align: "center",
-						field: "user_id",
-					},{
+                        title: "举报人",align: "center",
+                        field: "user.nickname",
+                        templet: function(d) {
+                            return d.user?d.user.nickname:"";
+                        }
+                    },{
+                        title: "举报人手机号",align: "center",
+                        field: "user.mobile",
+                        templet: function(d) {
+                            return d.user?d.user.mobile:"";
+                        }
+                    },{
+                        title: "举报人邮箱",align: "center",
+                        field: "user.email",
+                        templet: function(d) {
+                            return d.user?d.user.email:"";
+                        }
+                    },{
 						title: "被举报人",align: "center",
-						field: "to_user_id",
+						field: "to_user.nickname",
+                        templet: function(d) {
+                            return d.to_user?d.to_user.nickname:"";
+                        }
 					},{
+                        title: "被举报人手机号",align: "center",
+                        field: "to_user.mobile",
+                        templet: function(d) {
+                            return d.to_user?d.to_user.mobile:"";
+                        }
+                    },{
+                        title: "被举报人邮箱",align: "center",
+                        field: "to_user.email",
+                        templet: function(d) {
+                            return d.to_user?d.to_user.email:"";
+                        }
+                    },{
 						title: "举报理由",align: "center",
 						field: "reason",
 					},{
@@ -115,7 +313,30 @@
 					},{
 						title: "证明",align: "center",
 						field: "images",
+                        templet: function (d) {
+                            if (d['images']) {
+                                let imageUrls = d['images'].split(',');
+                                let imageHtml = '';
+                                imageUrls.forEach(function(imageUrl) {
+                                    imageHtml += '<img src="' + encodeURI(imageUrl.trim()) + '" style="max-width:32px;max-height:32px;margin:2px;" alt="" />';
+                                });
+                                return imageHtml;
+                            }
+                            return '';
+                        }
 					},{
+                        title: "状态",align: "center",
+                        field: "status",
+                        templet: function (d) {
+                            let field = "status";
+                            if (typeof d[field] == "undefined") return "";
+                            let items = [];
+                            layui.each((d[field] + "").split(","), function (k , v) {
+                                items.push(apiResults[field][v] || v);
+                            });
+                            return util.escape(items.join(","));
+                        }
+                    },{
 						title: "创建时间",align: "center",
 						field: "created_at",
 						sort: true,
@@ -127,7 +348,7 @@
 						toolbar: "#table-bar",
 						align: "center",
 						fixed: "right",
-						width: 120,
+						width: 150,
 					}
 				];
 				
@@ -150,14 +371,20 @@
 				        layer.photos({photos: 'div[lay-id="data-table"]', anim: 5});
 				    }
 				});
-				
-				
+
+                // 获取表格中下拉或树形组件数据
+                let apiResults = {};
+
+                apiResults["status"] = ["处理中","已处理"];
+
                 // 编辑或删除行事件
                 table.on("tool(data-table)", function(obj) {
                     if (obj.event === "remove") {
                         remove(obj);
                     } else if (obj.event === "edit") {
                         edit(obj);
+                    } else if (obj.event === "chatLog") {
+                        chatLog(obj);
                     }
                 });
 
@@ -234,6 +461,19 @@
                         maxmin: true,
                         area: [common.isModile()?"100%":"500px", common.isModile()?"100%":"450px"],
                         content: UPDATE_URL + "?" + PRIMARY_KEY + "=" + value
+                    });
+                }
+
+                let chatLog = function(obj) {
+                    let user_id = obj.data['user_id'];
+                    let to_user_id = obj.data['to_user_id'];
+                    layer.open({
+                        type: 2,
+                        title: "聊天记录",
+                        shade: 0.1,
+                        maxmin: true,
+                        area: [common.isModile()?"100%":"90%", common.isModile()?"100%":"90%"],
+                        content: "/admin/report/chatLog" + "?" + 'user_id' + "=" + user_id + "&" + 'to_user_id' + "=" + to_user_id
                     });
                 }
 

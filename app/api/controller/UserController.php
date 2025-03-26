@@ -313,18 +313,19 @@ class UserController extends Base
 
     function report(Request $request)
     {
+        $user = User::find($request->user_id);
         $to_user_id = $request->post('to_user_id');
         $reason = $request->post('reason');
         $explain = $request->post('explain');
         $images = $request->post('images');
-
-        Report::create([
+        $report = Report::create([
             'user_id' => $request->user_id,
             'to_user_id' => $to_user_id,
             'reason' => $reason,
             'explain' => $explain,
             'images' => $images,
         ]);
+        Client::send('job', ['event' => 'report_submit', 'email' => $user->email, 'template' => 'report_submit',  'last_name' => $user->last_name, 'name' => $user->name,'id'=>$report->id]);
         return $this->success('成功');
     }
 

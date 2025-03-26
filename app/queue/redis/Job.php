@@ -46,6 +46,30 @@ class Job implements Consumer
                 'url' => $url,
             ]);
         }
+        if ($event == 'report_submit') {
+            $email = $data['email'];
+            $id = $data['id'];
+            $last_name = $data['last_name'];
+            $name = $data['name'];
+            $template = $data['template'];
+            Email::sendByTemplate($email, $template, [
+                'last_name' => $last_name,
+                'name' => $name,
+                'id' => $id,
+            ]);
+        }
+        if ($event == 'report_reply') {
+            $email = $data['email'];
+            $last_name = $data['last_name'];
+            $name = $data['name'];
+            $template = $data['template'];
+            $result = $data['result'];
+            Email::sendByTemplate($email, $template, [
+                'last_name' => $last_name,
+                'name' => $name,
+                'result' => $result,
+            ]);
+        }
         if ($event == 'sms_add_hr') {
             $url = $data['url'];
             file_get_contents($url);

@@ -44,4 +44,14 @@ class Report  extends Base
         'explain',
         'images',
     ];
+
+    function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    function toUser()
+    {
+        return $this->belongsTo(User::class, 'to_user_id', 'id');
+    }
 }

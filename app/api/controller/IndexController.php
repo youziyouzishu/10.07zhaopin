@@ -12,9 +12,7 @@ use app\admin\model\Resume;
 use app\admin\model\Subscribe;
 use app\admin\model\User;
 use app\api\basic\Base;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
-use support\Log;
 use support\Request;
 use Tinywan\Jwt\Exception\JwtTokenException;
 use Tinywan\Jwt\JwtToken;
@@ -26,8 +24,7 @@ class IndexController extends Base
 
     function index()
     {
-        $a = ['aaa'=>2];
-        dump($a);
+
     }
     
     function test()

@@ -14,41 +14,54 @@
 
             <div class="mainBox">
                 <div class="main-container mr-5">
-                    
+
                     <div class="layui-form-item">
-                        <label class="layui-form-label">举报人</label>
+                        <label class="layui-form-label">状态</label>
                         <div class="layui-input-block">
-                            <input type="number" name="user_id" value="" class="layui-input">
+                            <div name="status" id="status"></div>
                         </div>
                     </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">被举报人</label>
+
+                    <div class="layui-form-item result">
+                        <label class="layui-form-label">处理结果</label>
                         <div class="layui-input-block">
-                            <input type="number" name="to_user_id" value="" class="layui-input">
+                            <textarea name="result" id="result" class="layui-textarea"></textarea>
                         </div>
                     </div>
+<!--                    <div class="layui-form-item">-->
+<!--                        <label class="layui-form-label">举报人</label>-->
+<!--                        <div class="layui-input-block">-->
+<!--                            <input type="number" name="user_id" value="" class="layui-input">-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                    -->
+<!--                    <div class="layui-form-item">-->
+<!--                        <label class="layui-form-label">被举报人</label>-->
+<!--                        <div class="layui-input-block">-->
+<!--                            <input type="number" name="to_user_id" value="" class="layui-input">-->
+<!--                        </div>-->
+<!--                    </div>-->
                     
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">举报理由</label>
-                        <div class="layui-input-block">
-                            <input type="text" name="reason" value="" class="layui-input">
-                        </div>
-                    </div>
+<!--                    <div class="layui-form-item">-->
+<!--                        <label class="layui-form-label">举报理由</label>-->
+<!--                        <div class="layui-input-block">-->
+<!--                            <input type="text" name="reason" value="" class="layui-input">-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                    -->
+<!--                    <div class="layui-form-item">-->
+<!--                        <label class="layui-form-label">举报说明</label>-->
+<!--                        <div class="layui-input-block">-->
+<!--                            <input type="text" name="explain" value="" class="layui-input">-->
+<!--                        </div>-->
+<!--                    </div>-->
                     
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">举报说明</label>
-                        <div class="layui-input-block">
-                            <input type="text" name="explain" value="" class="layui-input">
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">证明</label>
-                        <div class="layui-input-block">
-                            <input type="text" name="images" value="" class="layui-input">
-                        </div>
-                    </div>
+<!--                    <div class="layui-form-item">-->
+<!--                        <label class="layui-form-label">证明</label>-->
+<!--                        <div class="layui-input-block">-->
+<!--                            <input type="text" name="images" value="" class="layui-input">-->
+<!--                        </div>-->
+<!--                    </div>-->
                     
                 </div>
             </div>
@@ -101,8 +114,42 @@
                                 obj[0].value = value;
                             }
                         });
-                        
-                        
+
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#status").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            let data = [{"value":"0","name":"处理中"},{"value":"1","name":"已处理"}];
+                            if (value === "1") {
+                                data = [{"value":"1","name":"已处理"}];
+                            }
+                            let xmSelect = layui.xmSelect.render({
+                                el: "#status",
+                                name: "status",
+                                filterable: true,
+                                initValue: initValue,
+                                data: data,
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                                on: function (data) {
+                                    console.log(data);
+                                    //arr:  当前多选已选中的数据
+                                    var arr = data.arr;
+                                    //change, 此次选择变化的数据,数组
+                                    var change = data.change;
+                                    //isAdd, 此次操作是新增还是删除
+                                    var isAdd = data.isAdd;
+                                    if (isAdd && change[0].value === "1"){
+                                        $(".result").removeClass("layui-hide")
+                                    }else{
+                                        $(".result").addClass("layui-hide")
+                                    }
+                                }
+                            })
+                            xmSelect.setValue(initValue,false,true);
+                        });
+
+
                         // ajax返回失败
                         if (res.code) {
                             layui.popup.failure(res.msg);

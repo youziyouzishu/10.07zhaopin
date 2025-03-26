@@ -23,6 +23,13 @@
                     </div>
 
                     <div class="layui-form-item">
+                        <label class="layui-form-label">用户</label>
+                        <div class="layui-input-block">
+                            <div name="user_id" id="user_id" value="" ></div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
                         <label class="layui-form-label">默认</label>
                         <div class="layui-input-block">
                             <div name="default" id="default" value="" ></div>
@@ -95,7 +102,69 @@
             const DELETE_API = "/admin/resume/delete";
             const INSERT_URL = "/admin/resume/insert";
             const UPDATE_URL = "/admin/resume/update";
-            
+
+
+            layui.use(["jquery", "xmSelect", "popup"], function() {
+                let value = layui.$("#user_id").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: '#user_id',
+                    name: "user_id",
+                    //配置搜索
+                    filterable: true,
+                    //配置远程分页
+                    clickClose: true,
+                    radio: true,
+                    remoteSearch:true,
+                    initValue: initValue,
+                    template({ item, sels, name, value }){
+                        return item.value + '<span style="position: absolute; right: 10px; color: #8799a3">'+item.name+'</span>'
+                    },
+                    prop: {
+                        name: 'name',
+                        value: 'value',
+                    },
+                    //数据处理
+                    remoteMethod: function(val, cb, show, pageIndex){
+                        let results = [];
+                        let emailDone = false;
+                        let mobileDone = false;
+                        // 搜索邮箱
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                email: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                emailDone = true;
+                                if (mobileDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+
+                        // 搜索手机号
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                mobile: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                mobileDone = true;
+                                if (emailDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+                    }
+                })
+            });
+
+
             // 字段 默认:0=false=否,1=true=是 default
             layui.use(["jquery", "xmSelect"], function() {
                 let value = layui.$("#default").attr("value");
@@ -207,7 +276,7 @@
 						toolbar: "#table-bar",
 						align: "center",
 						fixed: "right",
-						width: 370,
+						width: 400,
 					}
 				];
 				

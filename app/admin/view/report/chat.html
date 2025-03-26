@@ -1,0 +1,168 @@
+
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head>
+        <meta charset="utf-8">
+        <title>浏览页面</title>
+        <link rel="stylesheet" href="/app/admin/component/pear/css/pear.css" />
+        <link rel="stylesheet" href="/app/admin/admin/css/reset.css" />
+    </head>
+    <body class="pear-container">
+
+
+    <!-- 顶部查询表单 -->
+    <div class="layui-card">
+        <div class="layui-card-body">
+            <form class="layui-form top-search-from">
+
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">条数</label>
+                    <div class="layui-input-block">
+                        <input type="number" name="count"  class="layui-input">
+                    </div>
+                </div>
+
+
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">起止时间</label>
+                    <div class="layui-input-block">
+                        <div class="layui-input-block" id="time">
+                            <input type="text" autocomplete="off" name="time[]" id="time-date-start" class="layui-input inline-block" placeholder="开始时间">
+                            -
+                            <input type="text" autocomplete="off" name="time[]" id="time-date-end" class="layui-input inline-block" placeholder="结束时间">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layui-form-item layui-inline">
+                    <label class="layui-form-label"></label>
+                    <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="table-query">
+                        <i class="layui-icon layui-icon-search"></i>查询
+                    </button>
+                    <button type="reset" class="pear-btn pear-btn-md" lay-submit lay-filter="table-reset">
+                        <i class="layui-icon layui-icon-refresh"></i>重置
+                    </button>
+                </div>
+                <div class="toggle-btn">
+                    <a class="layui-hide">展开<i class="layui-icon layui-icon-down"></i></a>
+                    <a class="layui-hide">收起<i class="layui-icon layui-icon-up"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- 数据表格 -->
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <table id="data-table" lay-filter="data-table"></table>
+            </div>
+        </div>
+
+        <script src="/app/admin/component/layui/layui.js?v=2.8.12"></script>
+        <script src="/app/admin/component/pear/pear.js"></script>
+        <script src="/app/admin/admin/js/permission.js"></script>
+        <script src="/app/admin/admin/js/common.js"></script>
+        
+        <script>
+
+            let user_id = layui.url().search['user_id'];
+            let to_user_id = layui.url().search['to_user_id'];
+            // 相关常量
+            const PRIMARY_KEY = "id";
+            const SELECT_API = "/admin/report/getChatLog?user_id="+ user_id + '&' + 'to_user_id=' + to_user_id;
+
+            // 字段 注册时间 time
+            layui.use(["laydate"], function() {
+                layui.laydate.render({
+                    elem: "#time",
+                    range: ["#time-date-start", "#time-date-end"],
+                    type: "datetime",
+                });
+            })
+
+            // 表格渲染
+            layui.use(["table", "form", "common", "popup", "util"], function() {
+                let table = layui.table;
+                let form = layui.form;
+                let $ = layui.$;
+                let common = layui.common;
+                let util = layui.util;
+				// 表头参数
+				let cols = [
+                    {
+                        title: "时间",align: "center",
+                        field: "time",
+                    },
+					{
+                        title: "昵称",align: "center",
+                        field: "user_nickname",
+
+                    },{
+                        title: "内容",align: "center",
+                        field: "content",
+                    }
+				];
+				
+				// 渲染表格
+				table.render({
+				    elem: "#data-table",
+				    url: SELECT_API,
+				    page: true,
+				    cols: [cols],
+				    skin: "line",
+				    size: "lg",
+				    toolbar: "#table-toolbar",
+				    autoSort: false,
+				    defaultToolbar: [{
+				        title: "刷新",
+				        layEvent: "refresh",
+				        icon: "layui-icon-refresh",
+				    }, "filter", "print", "exports"],
+				    done: function () {
+				        layer.photos({photos: 'div[lay-id="data-table"]', anim: 5});
+				    }
+				});
+
+                // 表格顶部搜索事件
+                form.on("submit(table-query)", function(data) {
+                    table.reload("data-table", {
+                        page: {
+                            curr: 1
+                        },
+                        where: data.field
+                    })
+                    return false;
+                });
+
+                // 表格顶部搜索重置事件
+                form.on("submit(table-reset)", function(data) {
+                    table.reload("data-table", {
+                        where: []
+                    })
+                });
+
+
+                // 刷新表格数据
+                window.refreshTable = function() {
+                    table.reloadData("data-table", {
+                        scrollPos: "fixed",
+                        done: function (res, curr) {
+                            if (curr > 1 && res.data && !res.data.length) {
+                                curr = curr - 1;
+                                table.reloadData("data-table", {
+                                    page: {
+                                        curr: curr
+                                    },
+                                })
+                            }
+                        }
+                    });
+                }
+            })
+
+        </script>
+    </body>
+</html>
