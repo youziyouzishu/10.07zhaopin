@@ -9,11 +9,11 @@ use plugin\admin\app\controller\Crud;
 use support\exception\BusinessException;
 
 /**
- * 简历列表 
+ * 简历列表
  */
 class ResumeController extends Crud
 {
-    
+
     /**
      * @var Resume
      */
@@ -36,8 +36,29 @@ class ResumeController extends Crud
      */
     public function select(Request $request): Response
     {
+        $deleted_status = $request->get('deleted_status');
         [$where, $format, $limit, $field, $order] = $this->selectInput($request);
-        $query = $this->doSelect($where, $field, $order)->with(['user']);
+        $query = $this->doSelect($where, $field, $order)
+            ->with(['user' => function ($query) {
+                $query->withTrashed();
+            }])
+            ->when(!empty($deleted_status), function ($query) use ($deleted_status) {
+                if ($deleted_status === '1') {
+                    $query->whereHas('user', function ($query) {
+                        $query->withTrashed();;
+                    });
+                }
+                if ($deleted_status === '2') {
+                    $query->whereHas('user', function ($query) {
+                        $query->onlyTrashed();;
+                    });
+                }
+                if ($deleted_status === '3') {
+                    $query->whereHas('user', function ($query) {
+                        $query->withoutTrashed();;
+                    });
+                }
+            });
         return $this->doFormat($query, $format, $limit);
     }
 
@@ -70,7 +91,7 @@ class ResumeController extends Crud
      * @param Request $request
      * @return Response
      * @throws BusinessException
-    */
+     */
     public function update(Request $request): Response
     {
         if ($request->method() === 'POST') {

@@ -55,12 +55,13 @@ use plugin\admin\app\model\Base;
  * @property-read mixed $vip_status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \app\admin\model\SendLog> $sendLog
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \app\admin\model\SendLog> $receiveLog
+ * @property-read mixed $hr_type_text
  * @mixin \Eloquent
  */
-
 class User extends Base
 {
     use SoftDeletes;
+
     /**
      * The table associated with the model.
      *
@@ -80,7 +81,7 @@ class User extends Base
     ];
 
     protected $appends = ['vip_status'];
-    
+
 
     protected $fillable = [
         'nickname',
@@ -114,24 +115,25 @@ class User extends Base
         'middle_name',
         'salutation',
     ];
+
     function profile()
     {
-        return $this->hasOne(UsersProfile::class,'user_id','id');
+        return $this->hasOne(UsersProfile::class, 'user_id', 'id');
     }
 
     function hr()
     {
-        return $this->hasMany(UsersHr::class,'user_id','id');
+        return $this->hasMany(UsersHr::class, 'user_id', 'id');
     }
 
     function resume()
     {
-        return $this->hasMany(Resume::class,'user_id','id');
+        return $this->hasMany(Resume::class, 'user_id', 'id');
     }
 
     function job()
     {
-        return $this->hasMany(Job::class,'user_id','id');
+        return $this->hasMany(Job::class, 'user_id', 'id');
     }
 
     function getVipStatusAttribute($value)
@@ -141,16 +143,30 @@ class User extends Base
 
     function sendLog()
     {
-        return $this->hasMany(SendLog::class,'resume_user_id','id');
+        return $this->hasMany(SendLog::class, 'resume_user_id', 'id');
     }
 
     function receiveLog()
     {
-        return $this->hasMany(SendLog::class,'job_user_id','id');
+        return $this->hasMany(SendLog::class, 'job_user_id', 'id');
     }
 
+    function getHrTypeTextAttribute($value)
+    {
+        $value = $value ? $value : $this->hr_type;
+        $list = $this->getHrTypeList();
+        return $list[$value] ?? '';
+    }
 
-
+    function getHrTypeList()
+    {
+        return [
+            0 => 'Null',
+            1 => 'Regular HR',
+            2 => 'Verified HR',
+            3 => 'Super HR',
+        ];
+    }
 
 
 }

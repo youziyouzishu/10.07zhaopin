@@ -15,6 +15,20 @@
                 <form class="layui-form top-search-from">
 
                     <div class="layui-form-item">
+                        <label class="layui-form-label">主键</label>
+                        <div class="layui-input-block">
+                            <input type="number" name="id" value="" class="layui-input">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">公司名</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="compony_name"  class="layui-input">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
                         <label class="layui-form-label">岗位名</label>
                         <div class="layui-input-block">
                             <input type="text" name="position_name"  class="layui-input">
@@ -124,6 +138,13 @@
                         <label class="layui-form-label">是否允许已申请用户重复申请</label>
                         <div class="layui-input-block">
                             <div name="allow_duplicate_application" id="allow_duplicate_application" value="" ></div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">注销状态</label>
+                        <div class="layui-input-block">
+                            <div name="deleted_status" id="deleted_status" value="" ></div>
                         </div>
                     </div>
 
@@ -290,6 +311,21 @@
                     filterable: true,
                     initValue: initValue,
                     data: [{"value":"0","name":"false"},{"value":"1","name":"true"}],
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
+
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#deleted_status").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#deleted_status",
+                    name: "deleted_status",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"1","name":"全部"},{"value":"2","name":"已注销"},{"value":"3","name":"未注销"}],
                     model: {"icon":"hidden","label":{"type":"text"}},
                     clickClose: true,
                     radio: true,
@@ -723,6 +759,16 @@
 							return util.escape(items.join(","));
 						}
 					},{
+                        title: "注销状态",align: "center",
+                        field: "user.deleted_status",
+                        templet: function (d) {
+                            if (d.user&&d.user.deleted_at === null){
+                                return "未注销";
+                            }else{
+                                return "已注销";
+                            }
+                        }
+                    },{
 						title: "过期时间",align: "center",
 						field: "expire_time",
 					},{

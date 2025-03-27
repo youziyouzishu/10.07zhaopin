@@ -15,44 +15,23 @@
                 <div class="main-container mr-5">
                     
                     <div class="layui-form-item">
-                        <label class="layui-form-label required">所属简历</label>
+                        <label class="layui-form-label required">用户</label>
                         <div class="layui-input-block">
-                            <input type="number" name="resume_id" value="" required lay-verify="required" class="layui-input">
+                            <div name="user_id" id="user_id" value="" ></div>
                         </div>
                     </div>
                     
                     <div class="layui-form-item">
-                        <label class="layui-form-label">公司名</label>
+                        <label class="layui-form-label required">过期时间</label>
                         <div class="layui-input-block">
-                            <input type="text" name="company_name" value="" class="layui-input">
+                            <input type="text" name="expired_at" id="expired_at" required lay-verify="required" autocomplete="off" class="layui-input">
                         </div>
                     </div>
                     
                     <div class="layui-form-item">
-                        <label class="layui-form-label">岗位名</label>
+                        <label class="layui-form-label required">原因</label>
                         <div class="layui-input-block">
-                            <input type="text" name="position_name" value="" class="layui-input">
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label required">工作开始时间</label>
-                        <div class="layui-input-block">
-                            <input type="text" name="start_date" id="start_date" required lay-verify="required" autocomplete="off" class="layui-input">
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label required">工作结束时间</label>
-                        <div class="layui-input-block">
-                            <input type="text" name="end_date" id="end_date" required lay-verify="required" autocomplete="off" class="layui-input">
-                        </div>
-                    </div>
-                    
-                    <div class="layui-form-item">
-                        <label class="layui-form-label">工作描述</label>
-                        <div class="layui-input-block">
-                            <textarea name="internship_description" class="layui-textarea"></textarea>
+                            <textarea name="reason" required lay-verify="required" class="layui-textarea"></textarea>
                         </div>
                     </div>
                     
@@ -81,25 +60,76 @@
         <script>
 
             // 相关接口
-            const INSERT_API = "/admin/full-time-experience/insert";
+            const INSERT_API = "/admin/users-forbidden/insert";
             
-            // 字段 工作开始时间 start_date
+            // 字段 过期时间 expired_at
             layui.use(["laydate"], function() {
                 layui.laydate.render({
-                    elem: "#start_date",
-                    type: "date",
+                    elem: "#expired_at",
+                    type: "datetime",
                     lang:'en'
                 });
             })
-            
-            // 字段 工作结束时间 end_date
-            layui.use(["laydate"], function() {
-                layui.laydate.render({
-                    elem: "#end_date",
-                    type: "date",
-                    lang:'en'
-                });
-            })
+
+            layui.use(["jquery", "xmSelect", "popup"], function() {
+                let value = layui.$("#user_id").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: '#user_id',
+                    name: "user_id",
+                    //配置搜索
+                    filterable: true,
+                    //配置远程分页
+                    clickClose: true,
+                    radio: true,
+                    remoteSearch:true,
+                    initValue: initValue,
+                    template({ item, sels, name, value }){
+                        return item.value + '<span style="position: absolute; right: 10px; color: #8799a3">'+item.name+'</span>'
+                    },
+                    prop: {
+                        name: 'name',
+                        value: 'value',
+                    },
+                    //数据处理
+                    remoteMethod: function(val, cb, show, pageIndex){
+                        let results = [];
+                        let emailDone = false;
+                        let mobileDone = false;
+                        // 搜索邮箱
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                email: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                emailDone = true;
+                                if (mobileDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+
+                        // 搜索手机号
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                mobile: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                mobileDone = true;
+                                if (emailDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+                    }
+                })
+            });
             
             //提交事件
             layui.use(["form", "popup"], function () {

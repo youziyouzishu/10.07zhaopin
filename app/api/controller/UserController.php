@@ -6,6 +6,7 @@ use app\admin\model\Ems;
 use app\admin\model\Report;
 use app\admin\model\Sms;
 use app\admin\model\User;
+use app\admin\model\UsersForbidden;
 use app\admin\model\UsersHr;
 use app\admin\model\UsersProfile;
 use app\admin\model\VipOrders;
@@ -110,7 +111,6 @@ class UserController extends Base
 
     function login(Request $request)
     {
-
         $login_type = $request->post('login_type');#登陆方式 0=账号登录 1=验证码登录
         $account = $request->post('account');
         $password = $request->post('password');
@@ -131,7 +131,6 @@ class UserController extends Base
                 return $this->fail('密码错误');
             }
         } else {
-
             if ($field == 'mobile') {
                 $ret = Sms::check($account, $captcha, 'login');
             } else {
@@ -144,6 +143,10 @@ class UserController extends Base
             if (!$user) {
                 return $this->fail('账户不存在');
             }
+        }
+        $users_forbid = UsersForbidden::where('user_id', $user->id)->orderByDesc('expired_at')->first();
+        if ($users_forbid && !$users_forbid->expired_at->isPast()) {
+            return $this->fail('账户已被封禁');
         }
         $token = JwtToken::generateToken([
             'id' => $user->id,

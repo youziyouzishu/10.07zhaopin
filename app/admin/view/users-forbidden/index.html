@@ -15,9 +15,34 @@
                 <form class="layui-form top-search-from">
                     
                     <div class="layui-form-item">
+                        <label class="layui-form-label">主键</label>
+                        <div class="layui-input-block">
+                            <input type="number" name="id" value="" class="layui-input">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">用户</label>
+                        <div class="layui-input-block">
+                            <div name="user_id" id="user_id" value="" ></div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">注销状态</label>
+                        <div class="layui-input-block">
+                            <div name="deleted_status" id="deleted_status" value="" ></div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
                         <label class="layui-form-label">创建时间</label>
                         <div class="layui-input-block">
-                            <input type="text" name="created_at" id="created_at" autocomplete="off" class="layui-input">
+                            <div class="layui-input-block" id="created_at">
+                                <input type="text" autocomplete="off" name="created_at[]" id="created_at-date-start" class="layui-input inline-block" placeholder="开始时间">
+                                -
+                                <input type="text" autocomplete="off" name="created_at[]" id="created_at-date-end" class="layui-input inline-block" placeholder="结束时间">
+                            </div>
                         </div>
                     </div>
                     
@@ -47,19 +72,18 @@
 
         <!-- 表格顶部工具栏 -->
         <script type="text/html" id="table-toolbar">
-            <button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add" permission="admin.internshipexperience.insert">
+            <button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add" permission="admin.usersforbidden.insert">
                 <i class="layui-icon layui-icon-add-1"></i>新增
             </button>
-            <button class="pear-btn pear-btn-danger pear-btn-md" lay-event="batchRemove" permission="admin.internshipexperience.delete">
+            <button class="pear-btn pear-btn-danger pear-btn-md" lay-event="batchRemove" permission="admin.usersforbidden.delete">
                 <i class="layui-icon layui-icon-delete"></i>删除
             </button>
         </script>
 
         <!-- 表格行工具栏 -->
         <script type="text/html" id="table-bar">
-            <button class="pear-btn pear-btn-xs tool-btn" lay-event="internshipexperienceskill" permission="admin.internshipexperienceskill.select">技术栈</button>
-            <button class="pear-btn pear-btn-xs tool-btn" lay-event="edit" permission="admin.internshipexperience.update">编辑</button>
-            <button class="pear-btn pear-btn-xs tool-btn" lay-event="remove" permission="admin.internshipexperience.delete">删除</button>
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="edit" permission="admin.usersforbidden.update">编辑</button>
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="remove" permission="admin.usersforbidden.delete">删除</button>
         </script>
 
         <script src="/app/admin/component/layui/layui.js?v=2.8.12"></script>
@@ -69,23 +93,98 @@
         
         <script>
 
-            let resume_id = layui.url().search['resume_id'];
             // 相关常量
             const PRIMARY_KEY = "id";
-            const SELECT_API = "/admin/internship-experience/select?resume_id="+resume_id;
-            const UPDATE_API = "/admin/internship-experience/update";
-            const DELETE_API = "/admin/internship-experience/delete";
-            const INSERT_URL = "/admin/internship-experience/insert";
-            const UPDATE_URL = "/admin/internship-experience/update";
+            const SELECT_API = "/admin/users-forbidden/select";
+            const UPDATE_API = "/admin/users-forbidden/update";
+            const DELETE_API = "/admin/users-forbidden/delete";
+            const INSERT_URL = "/admin/users-forbidden/insert";
+            const UPDATE_URL = "/admin/users-forbidden/update";
             
             // 字段 创建时间 created_at
             layui.use(["laydate"], function() {
                 layui.laydate.render({
                     elem: "#created_at",
+                    range: ["#created_at-date-start", "#created_at-date-end"],
                     type: "datetime",
                     lang:'en'
                 });
             })
+
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#deleted_status").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#deleted_status",
+                    name: "deleted_status",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"1","name":"全部"},{"value":"2","name":"已注销"},{"value":"3","name":"未注销"}],
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
+
+            layui.use(["jquery", "xmSelect", "popup"], function() {
+                let value = layui.$("#user_id").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: '#user_id',
+                    name: "user_id",
+                    //配置搜索
+                    filterable: true,
+                    //配置远程分页
+                    clickClose: true,
+                    radio: true,
+                    remoteSearch:true,
+                    initValue: initValue,
+                    template({ item, sels, name, value }){
+                        return item.value + '<span style="position: absolute; right: 10px; color: #8799a3">'+item.name+'</span>'
+                    },
+                    prop: {
+                        name: 'name',
+                        value: 'value',
+                    },
+                    //数据处理
+                    remoteMethod: function(val, cb, show, pageIndex){
+                        let results = [];
+                        let emailDone = false;
+                        let mobileDone = false;
+                        // 搜索邮箱
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                email: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                emailDone = true;
+                                if (mobileDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+
+                        // 搜索手机号
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                mobile: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                mobileDone = true;
+                                if (emailDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+                    }
+                })
+            });
             
             // 表格渲染
             layui.use(["table", "form", "common", "popup", "util"], function() {
@@ -101,28 +200,37 @@
 						type: "checkbox",
 						align: "center"
 					},{
-						title: "id",align: "center",
+						title: "主键",align: "center",
 						field: "id",
-					},{
-						title: "实习公司名",align: "center",
-						field: "company_name",
-					},{
-						title: "实习岗位名",align: "center",
-						field: "position_name",
-					},{
-						title: "实习开始时间",align: "center",
-						field: "start_date",
-					},{
-						title: "实习结束时间",align: "center",
-						field: "end_date",
-					},{
-						title: "实习描述",align: "center",
-						field: "internship_description",
-					},{
-						title: "创建时间",align: "center",
-						field: "created_at",
 						sort: true,
 					},{
+						title: "用户",align: "center",
+						field: "user_id",
+                        templet: function (d) {
+                            return d.user? d.user.nickname : '';
+                        }
+					},{
+                        title: "开始时间",align: "center",
+                        field: "created_at",
+                        sort: true,
+                    },{
+						title: "过期时间",align: "center",
+						field: "expired_at",
+                        sort: true,
+					},{
+						title: "原因",align: "center",
+						field: "reason",
+					},{
+                        title: "注销状态",align: "center",
+                        field: "user.deleted_status",
+                        templet: function (d) {
+                            if (d.user&&d.user.deleted_at === null){
+                                return "未注销";
+                            }else{
+                                return "已注销";
+                            }
+                        }
+                    },{
 						title: "更新时间",align: "center",
 						field: "updated_at",
 					},{
@@ -161,8 +269,6 @@
                         remove(obj);
                     } else if (obj.event === "edit") {
                         edit(obj);
-                    } else if (obj.event === "internshipexperienceskill") {
-                        internshipexperienceskill(obj);
                     }
                 });
 
@@ -239,18 +345,6 @@
                         maxmin: true,
                         area: [common.isModile()?"100%":"500px", common.isModile()?"100%":"450px"],
                         content: UPDATE_URL + "?" + PRIMARY_KEY + "=" + value
-                    });
-                }
-
-                let internshipexperienceskill = function(obj) {
-                    let value = obj.data[PRIMARY_KEY];
-                    layer.open({
-                        type: 2,
-                        title: "技术栈",
-                        shade: 0.1,
-                        maxmin: true,
-                        area: [common.isModile()?"100%":"90%", common.isModile()?"100%":"90%"],
-                        content: "/admin/internship-experience-skill/index" + "?" + 'internship_id' + "=" + value
                     });
                 }
 

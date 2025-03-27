@@ -93,7 +93,6 @@ class Sms extends Base
         ]);
         Client::send('job', ['event' => 'sms_captcha', 'mobile' => '+'.$country_num.$mobile,'code'=>$code]);
         return true;
-
     }
 
     /**

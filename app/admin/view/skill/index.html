@@ -20,7 +20,15 @@
                             <input type="number" name="id" value="" class="layui-input">
                         </div>
                     </div>
-                    
+
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">名称</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="name" value="" class="layui-input">
+                        </div>
+                    </div>
+
                     <div class="layui-form-item">
                         <label class="layui-form-label">创建时间</label>
                         <div class="layui-input-block">
@@ -28,6 +36,17 @@
                                 <input type="text" autocomplete="off" name="created_at[]" id="created_at-date-start" class="layui-input inline-block" placeholder="开始时间">
                                 -
                                 <input type="text" autocomplete="off" name="created_at[]" id="created_at-date-end" class="layui-input inline-block" placeholder="结束时间">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">更新时间</label>
+                        <div class="layui-input-block">
+                            <div class="layui-input-block" id="updated_at">
+                                <input type="text" autocomplete="off" name="updated_at[]" id="updated_at-date-start" class="layui-input inline-block" placeholder="开始时间">
+                                -
+                                <input type="text" autocomplete="off" name="updated_at[]" id="updated_at-date-end" class="layui-input inline-block" placeholder="结束时间">
                             </div>
                         </div>
                     </div>
@@ -93,6 +112,16 @@
                     elem: "#created_at",
                     range: ["#created_at-date-start", "#created_at-date-end"],
                     type: "datetime",
+                    lang:'en'
+                });
+            })
+
+            layui.use(["laydate"], function() {
+                layui.laydate.render({
+                    elem: "#updated_at",
+                    range: ["#updated_at-date-start", "#updated_at-date-end"],
+                    type: "datetime",
+                    lang:'en'
                 });
             })
             

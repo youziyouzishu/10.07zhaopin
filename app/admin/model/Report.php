@@ -18,6 +18,10 @@ use plugin\admin\app\model\Base;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Report newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Report newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Report query()
+ * @property int $status 状态:0=未处理,1=已处理
+ * @property string|null $result 处理结果
+ * @property-read \app\admin\model\User|null $toUser
+ * @property-read \app\admin\model\User|null $user
  * @mixin \Eloquent
  */
 class Report  extends Base

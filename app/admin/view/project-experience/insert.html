@@ -94,7 +94,8 @@
             layui.use(["laydate"], function() {
                 layui.laydate.render({
                     elem: "#project_start_date",
-            
+                    type:"date",
+                    lang:'en'
                 });
             })
             
@@ -102,7 +103,8 @@
             layui.use(["laydate"], function() {
                 layui.laydate.render({
                     elem: "#project_end_date",
-            
+                    type: "date",
+                    lang:'en'
                 });
             })
             
@@ -111,6 +113,7 @@
                 layui.laydate.render({
                     elem: "#created_at",
                     type: "datetime",
+                    lang:'en'
                 });
             })
             

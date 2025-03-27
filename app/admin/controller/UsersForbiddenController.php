@@ -2,20 +2,23 @@
 
 namespace app\admin\controller;
 
+use app\admin\model\User;
+use Carbon\Carbon;
 use support\Request;
 use support\Response;
-use app\admin\model\VipOrders;
+use app\admin\model\UsersForbidden;
 use plugin\admin\app\controller\Crud;
 use support\exception\BusinessException;
+use Webman\RedisQueue\Client;
 
 /**
- * VIP订单列表
+ * 封禁列表
  */
-class VipOrdersController extends Crud
+class UsersForbiddenController extends Crud
 {
 
     /**
-     * @var VipOrders
+     * @var UsersForbidden
      */
     protected $model = null;
 
@@ -25,7 +28,7 @@ class VipOrdersController extends Crud
      */
     public function __construct()
     {
-        $this->model = new VipOrders;
+        $this->model = new UsersForbidden;
     }
 
     /**
@@ -34,7 +37,7 @@ class VipOrdersController extends Crud
      */
     public function index(): Response
     {
-        return view('vip-orders/index');
+        return view('users-forbidden/index');
     }
 
     /**
@@ -45,25 +48,12 @@ class VipOrdersController extends Crud
      */
     public function select(Request $request): Response
     {
-        $user_type = $request->get('user_type');
         $deleted_status = $request->get('deleted_status');
         [$where, $format, $limit, $field, $order] = $this->selectInput($request);
         $query = $this->doSelect($where, $field, $order)
             ->with(['user' => function ($query) {
                 $query->withTrashed();
-            },'vip'])
-            ->when(!empty($user_type), function ($query) use ($user_type) {
-                if ($user_type === '2') {
-                    $query->whereHas('user', function ($query) {
-                        $query->withTrashed()->where('user_type',1);
-                    });
-                }
-                if ($user_type === '3') {
-                    $query->whereHas('user', function ($query) {
-                        $query->withTrashed()->where('user_type',0);
-                    });
-                }
-            })
+            }])
             ->when(!empty($deleted_status), function ($query) use ($deleted_status) {
                 if ($deleted_status === '1') {
                     $query->whereHas('user', function ($query) {
@@ -81,7 +71,6 @@ class VipOrdersController extends Crud
                     });
                 }
             });
-
         return $this->doFormat($query, $format, $limit);
     }
 
@@ -94,9 +83,30 @@ class VipOrdersController extends Crud
     public function insert(Request $request): Response
     {
         if ($request->method() === 'POST') {
-            return parent::insert($request);
+            $expired_at = $request->post('expired_at');
+            $expired_at = Carbon::parse($expired_at);
+            if ($expired_at->isPast()) {
+                return $this->fail('过期时间不能小于当前时间');
+            }
+            $data = $this->insertInput($request);
+            $id = $this->doInsert($data);
+            $row = UsersForbidden::find($id);
+            $users_forbid = UsersForbidden::where('user_id', $row->user_id)->orderByDesc('expired_at')->first();
+            if ($users_forbid->id == $row->id) {
+                $day = (int)ceil($row->created_at->diffInDays($row->expired_at));
+                Client::send('job', [
+                    'event' => 'forbid_notice',
+                    'email' => $row->user->email,
+                    'template' => 'forbid_notice',
+                    'reason'=>$row->reason,
+                    'created_at'=>$row->created_at,
+                    'expired_at'=>$row->expired_at,
+                    'day'=>$day
+                ]);
+            }
+            return $this->json(0, 'ok', ['id' => $id]);
         }
-        return view('vip-orders/insert');
+        return view('users-forbidden/insert');
     }
 
     /**
@@ -110,7 +120,7 @@ class VipOrdersController extends Crud
         if ($request->method() === 'POST') {
             return parent::update($request);
         }
-        return view('vip-orders/update');
+        return view('users-forbidden/update');
     }
 
 }

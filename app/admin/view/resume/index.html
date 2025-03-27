@@ -42,6 +42,13 @@
                             <div name="top_degree" id="top_degree" value="" ></div>
                         </div>
                     </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">注销状态</label>
+                        <div class="layui-input-block">
+                            <div name="deleted_status" id="deleted_status" value="" ></div>
+                        </div>
+                    </div>
                     
                     <div class="layui-form-item layui-inline">
                         <label class="layui-form-label"></label>
@@ -180,6 +187,21 @@
                     radio: true,
                 })
             });
+
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#deleted_status").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#deleted_status",
+                    name: "deleted_status",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"1","name":"全部"},{"value":"2","name":"已注销"},{"value":"3","name":"未注销"}],
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
             
             // 字段 最高学历:0=High School or Below=高中及以下,1=Associate Degree=副学士学位,2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位 top_degree
             layui.use(["jquery", "xmSelect"], function() {
@@ -262,6 +284,16 @@
 							return util.escape(items.join(","));
 						}
 					},{
+                        title: "注销状态",align: "center",
+                        field: "user.deleted_status",
+                        templet: function (d) {
+                            if (d.user&&d.user.deleted_at === null){
+                                return "未注销";
+                            }else{
+                                return "已注销";
+                            }
+                        }
+                    },{
 						title: "创建时间",align: "center",
 						field: "created_at",
 					},{

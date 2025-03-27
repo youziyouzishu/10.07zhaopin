@@ -2,6 +2,9 @@
 
 namespace plugin\admin\app\controller;
 
+use app\admin\model\Ems;
+use app\admin\model\Sms;
+use Carbon\Carbon;
 use plugin\admin\app\common\Auth;
 use plugin\admin\app\common\Util;
 use plugin\admin\app\model\Admin;
@@ -21,7 +24,7 @@ class AccountController extends Crud
      * 不需要登录的方法
      * @var string[]
      */
-    protected $noNeedLogin = ['login', 'logout', 'captcha'];
+    protected $noNeedLogin = ['login', 'logout', 'captcha', 'forgetPassword', 'send', 'check', 'resetpwd'];
 
     /**
      * 不需要鉴权的方法
@@ -186,6 +189,30 @@ class AccountController extends Crud
         return $this->json(0);
     }
 
+    function resetpwd(Request $request)
+    {
+        $account = $request->post('account');
+        $password = $request->post('password');
+        if (!$password) {
+            return $this->fail('密码不能为空');
+        }
+
+        if (filter_var($account, FILTER_VALIDATE_EMAIL)) {
+            $field = 'email';
+        } elseif (preg_match('/^[0-9]{10}$/', $account)) {
+            $field = 'mobile';
+        } else {
+            return $this->fail('账号格式不正确');
+        }
+        $admin = Admin::where([$field => $account])->first();
+        if (empty($admin)){
+            return $this->fail('账号不存在');
+        }
+        $admin->password = Util::passwordHash($password);
+        $admin->save();
+        return $this->json(0);
+    }
+
     /**
      * 验证码
      * @param Request $request
@@ -215,7 +242,7 @@ class AccountController extends Crud
             mkdir($limit_log_path, 0777, true);
         }
         $limit_file = $limit_log_path . '/' . md5($username) . '.limit';
-        $time = date('YmdH') . ceil(date('i')/5);
+        $time = date('YmdH') . ceil(date('i') / 5);
         $limit_info = [];
         if (is_file($limit_file)) {
             $json_str = file_get_contents($limit_file);
@@ -255,6 +282,159 @@ class AccountController extends Crud
         if (!config('plugin.admin.database')) {
             throw new BusinessException('请重启webman');
         }
+    }
+
+    /**
+     * 忘记密码
+     * @param Request $request
+     */
+    function forgetPassword(Request $request)
+    {
+        return raw_view('account/forgetpassword');
+    }
+
+    function send(Request $request)
+    {
+        $account = $request->post('account');
+        $event = $request->post('event');
+        $event = $event ?: 'register';
+
+        if (filter_var($account, FILTER_VALIDATE_EMAIL)) {
+            $field = 'email';
+        } elseif (preg_match('/^[0-9]{10}$/', $account)) {
+            $field = 'mobile';
+        } else {
+            return $this->fail('账号格式不正确');
+        }
+        $admin = Admin::where([$field => $account])->first();
+
+        if ($field == 'mobile') {
+            $last = Sms::getLast($account, $event);
+
+            if ($last && time() - $last->created_at->timestamp < 60) {
+                return $this->fail('短信发送频繁');
+            }
+            // 获取当前小时的开始和结束时间
+            $startTime = Carbon::now()->startOfHour();
+            $endTime = Carbon::now()->endOfHour();
+            $ipSendTotal = Sms::where(['ip' => $request->getRealIp()])->whereBetween('created_at', [$startTime, $endTime])->count();
+            if ($ipSendTotal >= 5) {
+                return $this->fail('短信发送频繁');
+            }
+            if ($event) {
+                if ($event == 'register' && $admin) {
+                    //已被注册
+                    return $this->fail('手机号已被注册');
+                } elseif ($event == 'changemobile' && $admin) {
+                    //被占用
+                    return $this->fail('手机号已被占用');
+                } elseif (in_array($event, ['login', 'changepwd', 'resetpwd']) && !$admin) {
+                    //未注册
+                    return $this->fail('该手机号未注册');
+                }
+            }
+
+            $ret = Sms::send($account, null, $event);
+            if ($ret) {
+                return $this->success('发送成功');
+            } else {
+                return $this->fail('发送失败，请检查短信配置是否正确');
+            }
+        } else {
+            $last = Ems::getLast($account, $event);
+            if ($last && time() - $last->created_at->timestamp < 60) {
+                return $this->fail('邮件发送频繁');
+            }
+
+            // 获取当前小时的开始和结束时间
+            $startTime = Carbon::now()->startOfHour();
+            $endTime = Carbon::now()->endOfHour();
+            $ipSendTotal = Ems::where(['ip' => $request->getRealIp()])->whereBetween('created_at', [$startTime, $endTime])->count();
+            if ($ipSendTotal >= 5) {
+                return $this->fail('邮件发送频繁');
+            }
+
+            if ($event) {
+                if ($event == 'register' && $admin) {
+                    //已被注册
+                    return $this->fail('邮箱已被注册');
+                } elseif (in_array($event, ['changeemail']) && $admin) {
+                    //被占用
+                    return $this->fail('邮箱已被占用');
+                } elseif (in_array($event, ['login', 'changepwd', 'resetpwd']) && !$admin) {
+                    //未注册
+                    return $this->fail('邮箱未注册');
+                }
+            }
+            $ret = Ems::send($account, null, $event);
+            if ($ret) {
+                return $this->success('发送成功');
+            } else {
+                return $this->fail('发送失败');
+            }
+        }
+    }
+
+
+    function check(Request $request)
+    {
+        $account = $request->post('account');
+        $event = $request->post('event');
+        $event = $event ? $event : 'register';
+        $captcha = $request->post('captcha');
+        if (!preg_match("/^[a-z0-9]{4,6}\$/i", $captcha)) {
+            return $this->fail('验证码格式错误');
+        }
+
+        if (filter_var($account, FILTER_VALIDATE_EMAIL)) {
+            $field = 'email';
+        } elseif (preg_match('/^[0-9]{10}$/', $account)) {
+            $field = 'mobile';
+        } else {
+            return $this->fail('账号格式不正确');
+        }
+        $admin = Admin::where([$field => $account])->first();
+        if ($field == 'email') {
+            if ($event) {
+                if ($event == 'register' && $admin) {
+                    //已被注册
+                    return $this->fail('邮箱已被注册');
+                } elseif (in_array($event, ['changeemail']) && $admin) {
+                    //被占用
+                    return $this->fail('邮箱已被占用');
+                } elseif (in_array($event, ['changepwd', 'resetpwd']) && !$admin) {
+                    //未注册
+                    return $this->fail('邮箱未注册');
+                }
+            }
+            $ret = Ems::check($account, $captcha, $event);
+            if ($ret) {
+                return $this->success('成功');
+            } else {
+                return $this->fail('验证码不正确');
+            }
+        } else {
+            if ($event) {
+                if ($event == 'register' && $admin) {
+                    //已被注册
+                    return $this->fail('手机号已被注册');
+                } elseif ($event == 'changemobile' && $admin) {
+                    //被占用
+                    return $this->fail('手机号已被占用');
+                } elseif (in_array($event, ['changepwd', 'resetpwd']) && !$admin) {
+                    //未注册
+                    return $this->fail('该手机号未注册');
+                }
+            }
+            $ret = Sms::check($account, $captcha, $event);
+            if ($ret) {
+                return $this->success();
+            } else {
+                return $this->fail('验证码不正确');
+            }
+        }
+
+
     }
 
 }

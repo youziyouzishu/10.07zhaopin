@@ -36,13 +36,11 @@
                     </div>
 
                     <div class="layui-form-item">
-                        <label class="layui-form-label">禁用</label>
+                        <label class="layui-form-label">HR类型</label>
                         <div class="layui-input-block">
-                            <input type="checkbox" id="status" lay-filter="status" lay-skin="switch" />
-                            <input type="text" style="display:none" name="status" value="0" />
+                            <div name="hr_type" id="hr_type" value="" ></div>
                         </div>
                     </div>
-
                     
                 </div>
             </div>
@@ -92,6 +90,33 @@
                                 obj.attr("value", value);
                             }
                         });
+
+                        layui.use(["jquery", "xmSelect"], function() {
+                            let value = layui.$("#hr_type").attr("value");
+                            let initValue = value ? value.split(",") : [];
+                            let data
+                            if (value === '0'){
+                                data = [
+                                    {"value":"0","name":"Null"},
+                                ];
+                            }else{
+                                data = [
+                                    {"value":"1","name":"Regular HR"},
+                                    {"value":"2","name":"Verified HR"},
+                                    {"value":"3","name":"Super HR"},
+                                ];
+                            }
+                            layui.xmSelect.render({
+                                el: "#hr_type",
+                                name: "hr_type",
+                                filterable: true,
+                                initValue: initValue,
+                                data:data,
+                                model: {"icon":"hidden","label":{"type":"text"}},
+                                clickClose: true,
+                                radio: true,
+                            })
+                        });
                         
 
                         // 字段 头像 avatar
@@ -132,6 +157,7 @@
                                 lang:'en'
                             })
                         });
+
 
                         // 字段 禁用 status
                         layui.use(["form"], function() {

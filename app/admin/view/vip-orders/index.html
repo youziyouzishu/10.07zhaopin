@@ -20,11 +20,25 @@
                             <input type="number" name="id" value="" class="layui-input">
                         </div>
                     </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">用户</label>
+                        <div class="layui-input-block">
+                            <div name="user_id" id="user_id" value="" ></div>
+                        </div>
+                    </div>
                     
                     <div class="layui-form-item">
                         <label class="layui-form-label">状态</label>
                         <div class="layui-input-block">
                             <div name="status" id="status" value="" ></div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">VIP购买平台</label>
+                        <div class="layui-input-block">
+                            <div name="user_type" id="user_type" value="" ></div>
                         </div>
                     </div>
                     
@@ -36,6 +50,13 @@
                                 -
                                 <input type="text" autocomplete="off" name="created_at[]" id="created_at-date-end" class="layui-input inline-block" placeholder="结束时间">
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">注销状态</label>
+                        <div class="layui-input-block">
+                            <div name="deleted_status" id="deleted_status" value="" ></div>
                         </div>
                     </div>
                     
@@ -93,7 +114,82 @@
             const DELETE_API = "/admin/vip-orders/delete";
             const INSERT_URL = "/admin/vip-orders/insert";
             const UPDATE_URL = "/admin/vip-orders/update";
-            
+
+            layui.use(["jquery", "xmSelect", "popup"], function() {
+                let value = layui.$("#user_id").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: '#user_id',
+                    name: "user_id",
+                    //配置搜索
+                    filterable: true,
+                    //配置远程分页
+                    clickClose: true,
+                    radio: true,
+                    remoteSearch:true,
+                    initValue: initValue,
+                    template({ item, sels, name, value }){
+                        return item.value + '<span style="position: absolute; right: 10px; color: #8799a3">'+item.name+'</span>'
+                    },
+                    prop: {
+                        name: 'name',
+                        value: 'value',
+                    },
+                    //数据处理
+                    remoteMethod: function(val, cb, show, pageIndex){
+                        let results = [];
+                        let emailDone = false;
+                        let mobileDone = false;
+                        // 搜索邮箱
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                email: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                emailDone = true;
+                                if (mobileDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+
+                        // 搜索手机号
+                        layui.$.ajax({
+                            url: "/app/admin/user/select?format=select",
+                            dataType: "json",
+                            data: {
+                                mobile: val,
+                            },
+                            success: function(res) {
+                                results = results.concat(res.data);
+                                mobileDone = true;
+                                if (emailDone) {
+                                    cb(results);
+                                }
+                            }
+                        });
+                    }
+                })
+            });
+
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#deleted_status").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#deleted_status",
+                    name: "deleted_status",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"1","name":"全部"},{"value":"2","name":"已注销"},{"value":"3","name":"未注销"}],
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
+
             // 字段 状态:0=待支付,1=已支付 status
             layui.use(["jquery", "xmSelect"], function() {
                 let value = layui.$("#status").attr("value");
@@ -109,6 +205,21 @@
                     radio: true,
                 })
             });
+
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#user_type").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#user_type",
+                    name: "user_type",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"1","name":"全部"},{"value":"2","name":"HR端"},{"value":"3","name":"求职者端"}],
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
             
             // 字段 创建时间 created_at
             layui.use(["laydate"], function() {
@@ -116,6 +227,7 @@
                     elem: "#created_at",
                     range: ["#created_at-date-start", "#created_at-date-end"],
                     type: "datetime",
+                    lang:'en'
                 });
             })
             
@@ -139,9 +251,15 @@
 					},{
 						title: "用户",align: "center",
 						field: "user_id",
+                        templet: function (d) {
+                            return d.user? d.user.nickname : '';
+                        }
 					},{
 						title: "VIP",align: "center",
 						field: "vip_id",
+                        templet: function (d) {
+                            return d.vip? d.vip.name : '';
+                        }
 					},{
 						title: "支付金额",align: "center",
 						field: "pay_amount",
@@ -149,7 +267,7 @@
 						title: "订单编号",align: "center",
 						field: "ordersn",
 					},{
-						title: "状态:0=待支付,1=已支付",align: "center",
+						title: "状态",align: "center",
 						field: "status",
 						templet: function (d) {
 							let field = "status";
@@ -161,6 +279,16 @@
 							return util.escape(items.join(","));
 						}
 					},{
+                        title: "注销状态",align: "center",
+                        field: "user.deleted_status",
+                        templet: function (d) {
+                            if (d.user&&d.user.deleted_at === null){
+                                return "未注销";
+                            }else{
+                                return "已注销";
+                            }
+                        }
+                    },,{
 						title: "创建时间",align: "center",
 						field: "created_at",
 						sort: true,

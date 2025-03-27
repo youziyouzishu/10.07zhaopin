@@ -18,6 +18,8 @@ use plugin\admin\app\model\Base;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|VipOrders newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|VipOrders newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|VipOrders query()
+ * @property-read \app\admin\model\User|null $user
+ * @property-read \app\admin\model\Vip|null $vip
  * @mixin \Eloquent
  */
 class VipOrders extends Base
@@ -43,6 +45,16 @@ class VipOrders extends Base
         'ordersn',
         'status',
     ];
+
+    function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    function vip()
+    {
+        return $this->belongsTo(Vip::class, 'vip_id', 'id');
+    }
 
 
 }

@@ -109,6 +109,51 @@ class Job implements Consumer
             Email::sendByTemplate($email, 'delete_hr_2');
         }
 
+        if ($event == 'hr_adjust') {
+            $email = $data['email'];
+            $name = $data['name'];
+            $new_hr_type_text = $data['new_hr_type_text'];
+            Email::sendByTemplate($email, 'hr_adjust', [
+                'name' => $name,
+                'new_hr_type_text' => $new_hr_type_text
+            ]);
+        }
+
+        if ($event == 'hr_adjust_to_parent') {
+            $email = $data['email'];
+            $name = $data['name'];
+            $children_name = $data['children_name'];
+            $new_hr_type_text = $data['new_hr_type_text'];
+            Email::sendByTemplate($email, 'hr_adjust_to_parent', [
+                'name' => $name,
+                'children_name' => $children_name,
+                'new_hr_type_text' => $new_hr_type_text
+            ]);
+        }
+
+        if ($event == 'hr_adjust_to_child') {
+            $email = $data['email'];
+            $name = $data['name'];
+            $parent_name = $data['parent_name'];
+            Email::sendByTemplate($email, 'hr_adjust_to_child', [
+                'name' => $name,
+                'parent_name' => $parent_name
+            ]);
+        }
+        if ($event == 'forbid_notice') {
+            $email = $data['email'];
+            $reason = $data['reason'];
+            $created_at = $data['created_at'];
+            $expired_at = $data['expired_at'];
+            $day = $data['day'];
+            Email::sendByTemplate($email, 'forbid_notice', [
+                'reason' => $reason,
+                'created_at' => $created_at,
+                'expired_at' => $expired_at,
+                'day' => $day
+            ]);
+        }
+
         if ($event == 'vip_expire') {
             $user_id = $data['user_id'];
             $user = User::find($user_id);

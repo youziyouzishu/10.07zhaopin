@@ -11,6 +11,7 @@ use app\admin\model\JobSkill;
 use app\admin\model\Resume;
 use app\admin\model\Subscribe;
 use app\admin\model\User;
+use app\admin\model\UsersForbidden;
 use app\api\basic\Base;
 use Illuminate\Database\Eloquent\Builder;
 use support\Request;
@@ -24,7 +25,9 @@ class IndexController extends Base
 
     function index()
     {
-
+        $row = UsersForbidden::find(1);
+        $day = (int)ceil($row->created_at->diffInDays($row->expired_at));
+        dump($day);
     }
     
     function test()

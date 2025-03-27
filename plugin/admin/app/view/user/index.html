@@ -35,6 +35,13 @@
                         </div>
                     </div>
 
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">注销状态</label>
+                        <div class="layui-input-block">
+                            <div name="deleted_status" id="deleted_status" value="" ></div>
+                        </div>
+                    </div>
+
 
 
                     <div class="layui-form-item layui-inline">
@@ -91,6 +98,21 @@
             const DELETE_API = "/app/admin/user/delete";
             const INSERT_URL = "/app/admin/user/insert";
             const UPDATE_URL = "/app/admin/user/update";
+
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#deleted_status").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#deleted_status",
+                    name: "deleted_status",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"1","name":"全部"},{"value":"2","name":"已注销"},{"value":"3","name":"未注销"}],
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
             
             // 表格渲染
             layui.use(["table", "form", "common", "popup", "util"], function() {
@@ -207,30 +229,21 @@
                             });
                             return util.escape(items.join(","));
                         }
-                    },{
-                        title: "禁用",
-                        field: "status",
+                    },
+                    {
+                        title: "注销状态",align: "center",
+                        field: "deleted_status",
                         templet: function (d) {
-                            let field = "status";
-                            form.on("switch("+field+")", function (data) {
-                                let load = layer.load();
-                                let postData = {};
-                                postData[field] = data.elem.checked ? 1 : 0;
-                                postData[PRIMARY_KEY] = this.value;
-                                $.post(UPDATE_API, postData, function (res) {
-                                    layer.close(load);
-                                    if (res.code) {
-                                        return layui.popup.failure(res.msg, function () {
-                                            data.elem.checked = !data.elem.checked;
-                                            form.render();
-                                        });
-                                    }
-                                    return layui.popup.success("操作成功");
-                                })
-                            });
-                            let checked = d[field] === 1 ? "checked" : "";
-                            return '<input type="checkbox" value="'+util.escape(d[PRIMARY_KEY])+'" lay-filter="'+util.escape(field)+'" lay-skin="switch" lay-text="'+util.escape('')+'" '+checked+'/>';
+                            if (d.deleted_at === null) {
+                                return "未注销";
+                            }else{
+                                return "已注销";
+                            }
                         }
+                    },
+                    {
+                        title: "注销时间",align: "center",
+                        field: "deleted_at",
                     },
                     {
 						title: "操作",
