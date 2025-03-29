@@ -210,6 +210,18 @@
                             return d.user? d.user.nickname : '';
                         }
 					},{
+                        title: "邮箱",align: "center",
+                        field: "user.email",
+                        templet: function (d) {
+                            return d.user? d.user.email : '';
+                        }
+                    },{
+                        title: "手机号",align: "center",
+                        field: "user.mobile",
+                        templet: function (d) {
+                            return d.user? d.user.mobile : '';
+                        }
+                    },{
                         title: "开始时间",align: "center",
                         field: "created_at",
                         sort: true,

@@ -36,6 +36,13 @@
                     </div>
 
                     <div class="layui-form-item">
+                        <label class="layui-form-label">客户端类型</label>
+                        <div class="layui-input-block">
+                            <div name="type" id="type" value="" ></div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
                         <label class="layui-form-label">注销状态</label>
                         <div class="layui-input-block">
                             <div name="deleted_status" id="deleted_status" value="" ></div>
@@ -113,7 +120,21 @@
                     radio: true,
                 })
             });
-            
+
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#type").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#type",
+                    name: "type",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"0","name":"候选人"},{"value":"1","name":"招聘者"}],
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
             // 表格渲染
             layui.use(["table", "form", "common", "popup", "util"], function() {
                 let table = layui.table;
