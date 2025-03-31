@@ -12,12 +12,15 @@ use app\admin\model\UsersProfile;
 use app\admin\model\VipOrders;
 use app\api\basic\Base;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use plugin\admin\app\common\Util;
 use plugin\admin\app\model\Option;
 use support\Request;
 use Tencent\TLSSigAPIv2;
 use Tinywan\Jwt\JwtToken;
 use Tinywan\Validate\Facade\Validate;
+use Webman\RateLimiter\Limiter;
+use Webman\RateLimiter\RateLimitException;
 use Webman\RedisQueue\Client;
 use Webman\RedisQueue\Redis;
 
@@ -36,10 +39,23 @@ class UserController extends Base
         $mobile_code = $request->post('mobile_code');
         $password = $request->post('password');
         $password_confirm = $request->post('password_confirm');
+        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return $this->fail('邮箱格式错误');
+        }
+        if (!$mobile || !preg_match('/^[0-9]{10}$/', $mobile)) {
+            return $this->fail('手机号格式不正确');
+        }
+
+        $pattern = '/^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>])[\S]{8,}$/';
+        if (!preg_match($pattern, $password)) {
+            return $this->fail('密码格式不正确');
+        }
+
 
         if ($password != $password_confirm) {
             return $this->fail('两次密码不一致');
         }
+
         $emsResult = Ems::check($email, $email_code, 'register');
         if (!$emsResult) {
             return $this->fail('邮箱验证码不正确');
@@ -48,21 +64,17 @@ class UserController extends Base
         if (!$smsResult) {
             return $this->fail('手机验证码不正确');
         }
-        $email = User::where(['email' => $email,'type' => $request->user_type])->first();
-        if ($email) {
+
+        $email_exists = User::where(['email' => $email])->exists();
+        if ($email_exists) {
             return $this->fail('邮箱已存在');
         }
-        $mobile = User::where(['mobile' => $mobile,'type' => $request->user_type])->first();
-        if ($mobile) {
+        $mobile_exists = User::where(['mobile' => $mobile])->exists();
+        if ($mobile_exists) {
             return $this->fail('手机号已存在');
         }
-        $has = User::where(['email' => $email, 'mobile' => $mobile, 'type' => $request->user_type == 0 ? 1 : 0])->first();
-        if ($has) {
-            //如果有对应端用户，则删除
-            $has->delete();
-        }
         $user = User::create([
-            'nickname' => $name .' '. $middle_name .' '. $last_name,
+            'nickname' => $name . ' ' . $middle_name . ' ' . $last_name,
             'middle_name' => $middle_name,
             'avatar' => '/avatar.png',
             'email' => $email,
@@ -76,7 +88,7 @@ class UserController extends Base
             'password' => Util::passwordHash($password),
             'type' => $request->user_type,
             'hr_type' => $request->user_type == 0 ? 0 : 1,
-            'salutation'=> $request->user_type == 0 ? '' : 'I am very interested in your background. Could you share your resume with me?'
+            'salutation' => $request->user_type == 0 ? 'I am very interested in this position and would love the opportunity to learn more. I have carefully reviewed the job requirements and believe that my experience and skills make me a strong fit. I look forward to your feedback!' : 'I am very interested in your background. Could you share your resume with me?'
         ]);
 
         #注册送会员
@@ -89,7 +101,7 @@ class UserController extends Base
             $add_days = $config->resume_activity_day;
             $activity_start = Carbon::parse($resume_activity_start);
             $activity_end = Carbon::parse($resume_activity_end);
-        }else{
+        } else {
             list($hr_activity_start, $hr_activity_end) = explode(' - ', $config->hr_activity);
             $add_days = $config->hr_activity_day;
             $activity_start = Carbon::parse($hr_activity_start);
@@ -107,6 +119,15 @@ class UserController extends Base
             'client' => JwtToken::TOKEN_CLIENT_MOBILE
         ]);
         return $this->success('注册成功', ['user' => $user, 'token' => $token]);
+    }
+
+    function cancel(Request $request)
+    {
+        $user = User::find($request->user_id);
+        $user->resume()->update(['default' => 0]);
+        $user->job()->update(['status' => 0]);
+        $user->delete();
+        return $this->success('注销成功');
     }
 
     function login(Request $request)
@@ -162,8 +183,6 @@ class UserController extends Base
             $request->user_id = $user_id;
         }
         $row = User::with(['profile'])->find($request->user_id);
-
-
         return $this->success('成功', $row);
     }
 
@@ -206,6 +225,10 @@ class UserController extends Base
     {
         $newpassword = $request->post('newpassword');
         $password_confirm = $request->post('password_confirm');
+        $pattern = '/^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+{};:,<.>])[\S]{8,}$/';
+        if (!preg_match($pattern, $newpassword)) {
+            return $this->fail('密码格式不正确');
+        }
         if ($newpassword !== $password_confirm) {
             return $this->fail('两次密码不一致');
         }
@@ -224,10 +247,10 @@ class UserController extends Base
         if (!$row) {
             return $this->fail('用户不存在');
         }
-        if (!empty($data['company_name']) && $data['company_name'] != $row->company_name && $row->hr_type >= 2){
+        if (!empty($data['company_name']) && $data['company_name'] != $row->company_name && $row->hr_type >= 2) {
             //如果认证hr修改了公司名称，则取消认证
             //删除下面的HR
-            if ($row->hr_type == 2){
+            if ($row->hr_type == 2) {
                 //认证HR
                 $hrs = UsersHr::where(['to_user_id' => $request->user_id])->get();
                 foreach ($hrs as $hr) {
@@ -239,7 +262,7 @@ class UserController extends Base
                 }
 
             }
-            if ($row->hr_type == 3){
+            if ($row->hr_type == 3) {
                 //超级HR
                 $hrs = UsersHr::where(['user_id' => $request->user_id])->get();
                 //发信给自己
@@ -252,8 +275,8 @@ class UserController extends Base
             }
             $row->hr_type = 1;
         }
-        if (in_array($data,['middle_name','name','last_name'])){
-            $row->nickname = $data['name'].' '.$data['middle_name'].' '.$data['last_name'];
+        if (in_array($data, ['middle_name', 'name', 'last_name'])) {
+            $row->nickname = $data['name'] . ' ' . $data['middle_name'] . ' ' . $data['last_name'];
         }
         $userAttributes = $row->getAttributes();
         foreach ($data as $key => $value) {
@@ -309,13 +332,19 @@ class UserController extends Base
         $profile->postal_code = $postal_code;
         $profile->us_citizen = $us_citizen;
         $profile->middle_name = $middle_name;
-        $profile->salutation = empty($salutation)? '' : $salutation;
+        $profile->salutation = empty($salutation) ? '' : $salutation;
         $profile->save();
         return $this->success('成功');
     }
 
     function report(Request $request)
     {
+        try {
+            #限流器 每个用户1秒内只能请求1次
+            Limiter::check('user_' . $request->user_id, 1, 10);
+        } catch (RateLimitException $e) {
+            return $this->fail('请求频繁');
+        }
         $user = User::find($request->user_id);
         $to_user_id = $request->post('to_user_id');
         $reason = $request->post('reason');
@@ -328,7 +357,7 @@ class UserController extends Base
             'explain' => $explain,
             'images' => $images,
         ]);
-        Client::send('job', ['event' => 'report_submit', 'email' => $user->email, 'template' => 'report_submit',  'last_name' => $user->last_name, 'name' => $user->name,'id'=>$report->id]);
+        Client::send('job', ['event' => 'report_submit', 'email' => $user->email, 'template' => 'report_submit', 'last_name' => $user->last_name, 'name' => $user->name, 'id' => $report->id]);
         return $this->success('成功');
     }
 

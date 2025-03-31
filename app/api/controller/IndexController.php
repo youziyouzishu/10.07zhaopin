@@ -8,26 +8,30 @@ use app\admin\model\Job;
 use app\admin\model\JobMajor;
 use app\admin\model\JobNiceSkill;
 use app\admin\model\JobSkill;
+use app\admin\model\Report;
 use app\admin\model\Resume;
 use app\admin\model\Subscribe;
 use app\admin\model\User;
 use app\admin\model\UsersForbidden;
 use app\api\basic\Base;
 use Illuminate\Database\Eloquent\Builder;
+use RuntimeException;
 use support\Request;
 use Tinywan\Jwt\Exception\JwtTokenException;
 use Tinywan\Jwt\JwtToken;
+use Webman\RateLimiter\Annotation\RateLimiter;
+use Webman\RateLimiter\Limiter;
+use Webman\RateLimiter\RateLimitException;
+use Webman\RedisQueue\Client;
 
 
 class IndexController extends Base
 {
     protected $noNeedLogin = ['*'];
 
-    function index()
+    function index(Request $request)
     {
-        $row = UsersForbidden::find(1);
-        $day = (int)ceil($row->created_at->diffInDays($row->expired_at));
-        dump($day);
+
     }
     
     function test()

@@ -49,6 +49,7 @@ class UsersForbiddenController extends Crud
     public function select(Request $request): Response
     {
         $deleted_status = $request->get('deleted_status');
+        $user_type = $request->get('user_type');
         [$where, $format, $limit, $field, $order] = $this->selectInput($request);
         $query = $this->doSelect($where, $field, $order)
             ->with(['user' => function ($query) {
@@ -70,6 +71,11 @@ class UsersForbiddenController extends Crud
                         $query->withoutTrashed();;
                     });
                 }
+            })
+            ->when(!empty($user_type), function ($query) use ($user_type) {
+                $query->whereHas('user', function ($query)use($user_type) {
+                    $query->where('type', $user_type);
+                });
             });
         return $this->doFormat($query, $format, $limit);
     }

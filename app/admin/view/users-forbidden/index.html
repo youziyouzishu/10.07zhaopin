@@ -29,6 +29,13 @@
                     </div>
 
                     <div class="layui-form-item">
+                        <label class="layui-form-label">用户类型</label>
+                        <div class="layui-input-block">
+                            <div name="user_type" id="user_type" value="" ></div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
                         <label class="layui-form-label">注销状态</label>
                         <div class="layui-input-block">
                             <div name="deleted_status" id="deleted_status" value="" ></div>
@@ -110,6 +117,21 @@
                     lang:'en'
                 });
             })
+
+            layui.use(["jquery", "xmSelect"], function() {
+                let value = layui.$("#user_type").attr("value");
+                let initValue = value ? value.split(",") : [];
+                layui.xmSelect.render({
+                    el: "#user_type",
+                    name: "user_type",
+                    filterable: true,
+                    initValue: initValue,
+                    data: [{"value":"0","name":"求职者"},{"value":"1","name":"招聘者"}],
+                    model: {"icon":"hidden","label":{"type":"text"}},
+                    clickClose: true,
+                    radio: true,
+                })
+            });
 
             layui.use(["jquery", "xmSelect"], function() {
                 let value = layui.$("#deleted_status").attr("value");
@@ -222,6 +244,18 @@
                             return d.user? d.user.mobile : '';
                         }
                     },{
+                        title: "用户类型",align: "center",
+                        field: "user.type",
+                        templet: function (d) {
+                            let field = "user.type";
+                            if (typeof d.user.type == "undefined") return "";
+                            let items = [];
+                            layui.each((d.user.type + "").split(","), function (k , v) {
+                                items.push(apiResults[field][v] || v);
+                            });
+                            return util.escape(items.join(","));
+                        }
+                    },{
                         title: "开始时间",align: "center",
                         field: "created_at",
                         sort: true,
@@ -273,7 +307,10 @@
 				        layer.photos({photos: 'div[lay-id="data-table"]', anim: 5});
 				    }
 				});
-				
+
+                let apis = [];
+                let apiResults = {};
+                apiResults['user.type'] = ['求职者','招聘者'];
 				
                 // 编辑或删除行事件
                 table.on("tool(data-table)", function(obj) {

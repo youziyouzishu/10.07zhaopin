@@ -370,7 +370,7 @@ class JobController extends Base
     {
         try {
             #限流器 每个用户1秒内只能请求1次
-            Limiter::check('user_' . $request->user_id, 1, 1);
+            Limiter::check('user_' . $request->user_id, 1, 10);
         } catch (RateLimitException $e) {
             return $this->fail('请求频繁');
         }
@@ -513,7 +513,7 @@ class JobController extends Base
     {
         try {
             #限流器 每个用户1秒内只能请求1次
-            Limiter::check('user_' . $request->user_id, 1, 1);
+            Limiter::check('user_' . $request->user_id, 1, 10);
         } catch (RateLimitException $e) {
             return $this->fail('请求频繁');
         }

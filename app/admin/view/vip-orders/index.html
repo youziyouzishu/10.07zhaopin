@@ -255,12 +255,36 @@
                             return d.user? d.user.nickname : '';
                         }
 					},{
-						title: "VIP",align: "center",
+                        title: "用户类型",align: "center",
+                        field: "user.type",
+                        templet: function (d) {
+                            let field = "user.type";
+                            if (typeof d.user.type == "undefined") return "";
+                            let items = [];
+                            layui.each((d.user.type + "").split(","), function (k , v) {
+                                items.push(apiResults[field][v] || v);
+                            });
+                            return util.escape(items.join(","));
+                        }
+                    },{
+						title: "VIP类型",align: "center",
 						field: "vip_id",
                         templet: function (d) {
                             return d.vip? d.vip.name : '';
                         }
 					},{
+                        title: "邮箱",align: "center",
+                        field: "user.email",
+                        templet: function (d) {
+                            return d.user? d.user.email : '';
+                        }
+                    },{
+                        title: "手机号",align: "center",
+                        field: "user.mobile",
+                        templet: function (d) {
+                            return d.user? d.user.mobile : '';
+                        }
+                    },{
 						title: "支付金额",align: "center",
 						field: "pay_amount",
 					},{
@@ -326,6 +350,7 @@
 				
 				// 获取表格中下拉或树形组件数据
 				let apiResults = {};
+                apiResults['user.type'] = ['求职者','招聘者'];
 				apiResults["status"] = ["待支付","已支付"];
                 // 编辑或删除行事件
                 table.on("tool(data-table)", function(obj) {
