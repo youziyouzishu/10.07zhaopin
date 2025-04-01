@@ -23,6 +23,7 @@ class Job implements Consumer
     public function consume($data)
     {
         $event = $data['event'];
+        dump($event);
         if ($event == 'job_expire') {
             $job = \app\admin\model\Job::find($data['job_id']);
             if ($job && $job->expire_time->isPast() && $job->status == 1) {

@@ -17,6 +17,6 @@ return [
         'host' => '127.0.0.1',
         'password' => 'Ss85208522',
         'port' => 6379,
-        'database' => 0,
+        'database' => 6,
     ],
 ];
