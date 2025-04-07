@@ -5,18 +5,13 @@ namespace app\admin\model;
 use plugin\admin\app\model\Base;
 
 /**
- * 
- *
- * @property int $id 主键
- * @property int $type 类型:1=HR,2=Seeker
+ * @property integer $id 主键(主键)
+ * @property integer $type 类型:1=HR,2=Seeker
  * @property string $title 标题
  * @property string $content 内容
- * @property \Illuminate\Support\Carbon|null $created_at 创建时间
- * @property \Illuminate\Support\Carbon|null $updated_at 更新时间
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SystemNotice newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SystemNotice newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SystemNotice query()
- * @mixin \Eloquent
+ * @property string $image 图片
+ * @property string $created_at 创建时间
+ * @property string $updated_at 更新时间
  */
 class SystemNotice extends Base
 {
@@ -33,6 +28,7 @@ class SystemNotice extends Base
      * @var string
      */
     protected $primaryKey = 'id';
-
-
+    
+    
+    
 }

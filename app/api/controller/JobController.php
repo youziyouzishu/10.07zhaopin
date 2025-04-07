@@ -679,11 +679,9 @@ class JobController extends Base
             return $this->fail('未配置发信账户');
         }
         $sendUrl = Smsbao::SMSBAO_URL . "wsms?sms&u=" . $account['Username'] . "&p=" . $account['Password'] . "&m=" . urlencode('+1' . $mobile) . "&c=" . urlencode($content);
-        $a1 = Redis::send('job', ['event' => 'sms_add_hr', 'url' => $sendUrl]);
-        dump($a1);
+        Client::send('job', ['event' => 'sms_add_hr', 'url' => $sendUrl]);
         #发送邮箱
-        $a2 = Redis::send('job', ['event' => 'email_add_hr', 'email' => $email, 'template' => 'invite', 'company_name' => $user->company_name, 'position' => $user->position, 'last_name' => $user->last_name, 'name' => $user->name, 'url' => $url]);
-        dump($a2);
+        Client::send('job', ['event' => 'email_add_hr', 'email' => $email, 'template' => 'invite', 'company_name' => $user->company_name, 'position' => $user->position, 'last_name' => $user->last_name, 'name' => $user->name, 'url' => $url]);
         return $this->success('成功');
     }
 

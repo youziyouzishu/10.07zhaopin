@@ -15,6 +15,8 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use plugin\admin\app\common\Util;
 use plugin\admin\app\model\Option;
+use support\Db;
+use support\Log;
 use support\Request;
 use Tencent\TLSSigAPIv2;
 use Tinywan\Jwt\JwtToken;
@@ -73,51 +75,57 @@ class UserController extends Base
         if ($mobile_exists) {
             return $this->fail('手机号已存在');
         }
-        $user = User::create([
-            'nickname' => $name . ' ' . $middle_name . ' ' . $last_name,
-            'middle_name' => $middle_name,
-            'avatar' => '/avatar.png',
-            'email' => $email,
-            'mobile' => $mobile,
-            'last_time' => date('Y-m-d H:i:s'),
-            'last_ip' => $request->getRealIp(),
-            'join_time' => date('Y-m-d H:i:s'),
-            'join_ip' => $request->getRealIp(),
-            'name' => $name,
-            'last_name' => $last_name,
-            'password' => Util::passwordHash($password),
-            'type' => $request->user_type,
-            'hr_type' => $request->user_type == 0 ? 0 : 1,
-            'salutation' => $request->user_type == 0 ? 'I am very interested in this position and would love the opportunity to learn more. I have carefully reviewed the job requirements and believe that my experience and skills make me a strong fit. I look forward to your feedback!' : 'I am very interested in your background. Could you share your resume with me?'
-        ]);
-
-        #注册送会员
-        $name = 'admin_config';
-        $config = Option::where('name', $name)->value('value');
-        $config = json_decode($config);
-        $current_time = Carbon::now();
-        if ($request->user_type == 0) {
-            list($resume_activity_start, $resume_activity_end) = explode(' - ', $config->resume_activity);
-            $add_days = $config->resume_activity_day;
-            $activity_start = Carbon::parse($resume_activity_start);
-            $activity_end = Carbon::parse($resume_activity_end);
-        } else {
-            list($hr_activity_start, $hr_activity_end) = explode(' - ', $config->hr_activity);
-            $add_days = $config->hr_activity_day;
-            $activity_start = Carbon::parse($hr_activity_start);
-            $activity_end = Carbon::parse($hr_activity_end);
+        DB::connection('plugin.admin.mysql')->beginTransaction();
+        try {
+            $user = User::create([
+                'nickname' => $name . ' ' . $middle_name . ' ' . $last_name,
+                'middle_name' => $middle_name,
+                'avatar' => '/avatar.png',
+                'email' => $email,
+                'mobile' => $mobile,
+                'last_time' => date('Y-m-d H:i:s'),
+                'last_ip' => $request->getRealIp(),
+                'join_time' => date('Y-m-d H:i:s'),
+                'join_ip' => $request->getRealIp(),
+                'name' => $name,
+                'last_name' => $last_name,
+                'password' => Util::passwordHash($password),
+                'type' => $request->user_type,
+                'hr_type' => $request->user_type == 0 ? 0 : 1,
+                'salutation' => $request->user_type == 0 ? 'I am very interested in this position and would love the opportunity to learn more. I have carefully reviewed the job requirements and believe that my experience and skills make me a strong fit. I look forward to your feedback!' : 'I am very interested in your background. Could you share your resume with me?'
+            ]);
+            #注册送会员
+            $name = 'admin_config';
+            $config = Option::where('name', $name)->value('value');
+            $config = json_decode($config);
+            $current_time = Carbon::now();
+            if ($request->user_type == 0) {
+                list($resume_activity_start, $resume_activity_end) = explode(' - ', $config->resume_activity);
+                $add_days = $config->resume_activity_day;
+                $activity_start = Carbon::parse($resume_activity_start);
+                $activity_end = Carbon::parse($resume_activity_end);
+            } else {
+                list($hr_activity_start, $hr_activity_end) = explode(' - ', $config->hr_activity);
+                $add_days = $config->hr_activity_day;
+                $activity_start = Carbon::parse($hr_activity_start);
+                $activity_end = Carbon::parse($hr_activity_end);
+            }
+            if ($current_time->between($activity_start, $activity_end)) {
+                $user->vip_expire_at = $current_time->addDays((int)$add_days);
+                $user->save();
+                Client::send('job', ['event' => 'vip_expire', 'user_id' => $user->id], $user->vip_expire_at->timestamp - time());
+            }
+            $token = JwtToken::generateToken([
+                'id' => $user->id,
+                'client' => JwtToken::TOKEN_CLIENT_MOBILE
+            ]);
+            DB::connection('plugin.admin.mysql')->commit();
+        }catch (\Throwable $e){
+            DB::connection('plugin.admin.mysql')->rollBack();
+            Log::error('注册失败');
+            Log::error($e->getMessage());
+            return  $this->fail('注册失败');
         }
-
-        if ($current_time->between($activity_start, $activity_end)) {
-            $user->vip_expire_at = $current_time->addDays($add_days);
-            $user->save();
-            Client::send('job', ['event' => 'vip_expire', 'user_id' => $user->id], $user->vip_expire_at->timestamp - time());
-        }
-
-        $token = JwtToken::generateToken([
-            'id' => $user->id,
-            'client' => JwtToken::TOKEN_CLIENT_MOBILE
-        ]);
         return $this->success('注册成功', ['user' => $user, 'token' => $token]);
     }
 
