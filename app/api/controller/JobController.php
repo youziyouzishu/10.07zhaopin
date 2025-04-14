@@ -51,6 +51,10 @@ class JobController extends Base
         $defaultJobNiceSkill = $defaultJob->niceSkill->pluck('name')->toArray();
 
         $query = Resume::where(['default' => 1])
+            //先按照用户的在线状态排序
+            ->with(['user' => function ($builder) {
+                $builder->orderByDesc('online');
+            }])
             ->with(['skill'])
             ->whereHas('user', function (Builder $query) {
                 $query->where('show_status', 1);
@@ -92,10 +96,10 @@ class JobController extends Base
                 });
             })
             //绝密权限
-            ->when($defaultJob->top_secret == 0, function (Builder $query) use ($defaultJob) {
+            ->when($defaultJob->top_secret == 1, function (Builder $query) use ($defaultJob) {
                 $query->whereHas('user', function (Builder $query) use ($defaultJob) {
                     $query->whereHas('profile', function (Builder $query) {
-                        $query->where('top_secret', 0);
+                        $query->where('top_secret', 1);
                     });
                 });
             })
@@ -231,10 +235,7 @@ class JobController extends Base
             ->when(!empty($minimum_full_time_internship_experience_years), function (Builder $query) use ($minimum_full_time_internship_experience_years) {
                 $query->where('total_full_time_experience_years', '>=', $minimum_full_time_internship_experience_years);
             })
-            //先按照用户的在线状态排序
-            ->with(['user' => function ($builder) {
-                $builder->orderByDesc('online');
-            }])
+
             //按照岗位所需技术排序
             ->when(!empty($defaultJobNiceSkill), function (Builder $query) use ($defaultJobNiceSkill) {
                 $query->withCount(['skill' => function (Builder $query) use ($defaultJobNiceSkill) {

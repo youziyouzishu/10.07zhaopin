@@ -127,60 +127,49 @@ class ResumeController extends Base
                     });
                 })
                 //学历筛选
-                ->when(function (Builder $query) use ($resume) {
-                    // 首先检查候选人的教育背景是否符合岗位的最低学历要求
-                    if (empty($resume->educationalBackground)) {
-                        return false;
-                    }
-                    $degreeRequirements = $query->value('degree_requirements');
-                    $educationalDegrees = $resume->educationalBackground->pluck('degree_to_job')->toArray();
-                    return in_array($degreeRequirements, $educationalDegrees);
-                }, function (Builder $query) use ($resume) {
-                    // 符合
-                    // 提前获取岗位要求的值
-                    $degreeRequirements = $query->value('degree_requirements');
-                    $overallGpaRequirement = $query->value('overall_gpa_requirement');
-                    $majorGpaRequirement = $query->value('major_gpa_requirement');
-                    $degreeQsRanking = $query->value('degree_qs_ranking');
-                    $degreeUsRanking = $query->value('degree_us_ranking');
-                    // 检查是否存在匹配的 major
-                    $majorExists = JobMajor::where('id', $query->value('id'))->exists();
-                    // 筛选出符合的教育背景
-                    $filteredEducationalBackground = $resume->educationalBackground->filter(function (EducationalBackground $item) use ($degreeRequirements, $overallGpaRequirement, $majorGpaRequirement, $degreeQsRanking, $degreeUsRanking, $majorExists, $query) {
-                        $qsCondition = ($degreeQsRanking == 0) || ($item->top_qs_ranking <= $degreeQsRanking && $item->top_qs_ranking != 0);
-                        $usCondition = ($degreeUsRanking == 0) || ($item->top_us_ranking <= $degreeUsRanking && $item->top_us_ranking != 0);
-                        if ($majorExists) {
-                            $majorCondition = $query->whereHas('major', function (Builder $query) use ($item) {
-                                $query->where('name', $item->major);
+                ->where(function ($query) use ($resume) {
+                    // 主查询条件
+                    $query->whereExists(function ($subQuery) use ($resume) {
+                        // 子查询处理学历匹配逻辑
+                        $subQuery->select(DB::raw(1))
+                            ->from('wa_educational_background as edu')
+                            ->where('edu.resume_id', $resume->id)
+                            ->where(function ($q) {
+                                // 学历要求匹配
+                                $q->whereColumn('edu.degree_to_job', 'wa_job.degree_requirements')
+                                    // GPA要求
+                                    ->where('edu.cumulative_gpa', '>=', DB::raw('wa_job.overall_gpa_requirement'))
+                                    ->where('edu.major_gpa', '>=', DB::raw('wa_job.major_gpa_requirement'))
+                                    // 排名要求
+                                    ->where(function ($rankQ) {
+                                        $rankQ->whereRaw('(wa_job.degree_qs_ranking = 0 OR (edu.top_qs_ranking <= wa_job.degree_qs_ranking AND edu.top_qs_ranking != 0))')
+                                            ->whereRaw('(wa_job.degree_us_ranking = 0 OR (edu.top_us_ranking <= wa_job.degree_us_ranking AND edu.top_us_ranking != 0))');
+                                    })
+                                    // 专业匹配
+                                    ->where(function ($majorQ) {
+                                        $majorQ->whereNotExists(function ($noMajor) {
+                                            $noMajor->select(DB::raw(1))
+                                                ->from('wa_job_major')
+                                                ->whereColumn('wa_job_major.job_id', 'wa_job.id');
+                                        })
+                                            ->orWhereExists(function ($hasMajor) {
+                                                $hasMajor->select(DB::raw(1))
+                                                    ->from('wa_job_major')
+                                                    ->whereColumn('wa_job_major.job_id', 'wa_job.id')
+                                                    ->whereColumn('wa_job_major.name', 'edu.major');
+                                            });
+                                    });
                             });
-                        } else {
-                            $majorCondition = true;
-                        }
-                        return $item->degree_to_job == $degreeRequirements &&
-                            $item->cumulative_gpa >= $overallGpaRequirement &&
-                            $majorCondition &&
-                            $item->major_gpa >= $majorGpaRequirement &&
-                            $qsCondition &&
-                            $usCondition;
+                    })->orWhere(function ($q) use ($resume) {
+                        // 处理特殊情况的否定条件
+                        $q->whereRaw('wa_job.degree_requirements < ?', [$resume->top_degree])
+                            ->where(function ($sub) {
+                                $sub->where('wa_job.overall_gpa_requirement', '>', 0)
+                                    ->orWhere('wa_job.major_gpa_requirement', '>', 0)
+                                    ->orWhere('wa_job.degree_qs_ranking', '>', 0)
+                                    ->orWhere('wa_job.degree_us_ranking', '>', 0);
+                            });
                     });
-                    if ($filteredEducationalBackground->isEmpty()) {
-                        $query->whereRaw('1 = 0');
-                    }
-
-                }, function (Builder $query) use ($resume) {
-                    $degreeRequirements = $query->value('degree_requirements');
-                    // 不符合
-                    if ($resume->top_degree > $degreeRequirements) {
-                        $overallGpaRequirement = $query->value('overall_gpa_requirement');
-                        $majorGpaRequirement = $query->value('major_gpa_requirement');
-                        $degreeQsRanking = $query->value('degree_qs_ranking');
-                        $degreeUsRanking = $query->value('degree_us_ranking');
-                        if ($overallGpaRequirement != 0 || $majorGpaRequirement != 0 || $degreeQsRanking != 0 || $degreeUsRanking != 0) {
-                            $query->whereRaw('1 = 0');
-                        }
-                    } else {
-                        $query->whereRaw('1 = 0');
-                    }
                 })
                 //项目技术栈匹配
                 ->when(function (Builder $query) {
@@ -259,7 +248,6 @@ class ResumeController extends Base
                         $query->where('top_secret', 0);
                     })
 
-
                     //是否成人
                     ->when($adult == 0, function (Builder $query) {
                         $query->where('adult', 0);
@@ -271,8 +259,8 @@ class ResumeController extends Base
                     })
 
                     //受限国家
-                    ->when($from_limitation == 0, function (Builder $query) use ($from_limitation) {
-                        $query->where('from_limitation', 0);
+                    ->when($from_limitation == 1, function (Builder $query) use ($from_limitation) {
+                        $query->where('from_limitation', 1);
                     })
 
                     //是否美国公民
@@ -280,7 +268,6 @@ class ResumeController extends Base
                         $query->where('us_citizen', 0);
                     });
             }
-
         }
 
         $query = $query
