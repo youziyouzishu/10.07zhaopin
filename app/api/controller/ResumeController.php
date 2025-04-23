@@ -59,10 +59,12 @@ class ResumeController extends Base
         $resume = Resume::where(['user_id' => $request->user_id, 'id' => $resume_id])->first();#默认简历
 
         $query = Job::where(['status' => 1])
-            ->with(['user' => function ($query) {
-                //在线状态排序
-                $query->orderByDesc('online');
-            }])
+            ->with(['user'])
+            ->orderBy(
+                User::select('online')
+                    ->whereColumn('id', 'wa_job.user_id'),
+                'desc'
+            )
             //薪资范围筛选
             ->when(!empty($salary) || $salary == 0, function (Builder $query) use ($salary) {
                 if ($salary == 0) {
@@ -232,7 +234,7 @@ class ResumeController extends Base
                     $query->withCount(['niceSkill' => function (Builder $query) use ($skill) {
                         $query->whereIn('name', $skill);
                     }])
-                        ->orderByDesc('nice_skill_count');
+                        ->latest('nice_skill_count');
                 });
 
             $user = User::find($request->user_id); #个人信息
@@ -738,6 +740,7 @@ class ResumeController extends Base
             return $this->fail($e->getMessage());
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
+            Log::error('createResume');
             Log::error($e->getMessage());
             return $this->fail('失败');
         }
@@ -946,6 +949,7 @@ class ResumeController extends Base
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
+            Log::error('editResume');
             Log::error($e->getMessage());
             return $this->fail('失败');
         }

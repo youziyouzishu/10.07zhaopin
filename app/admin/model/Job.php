@@ -61,7 +61,7 @@ class Job extends Base
     protected $table = 'wa_job';
 
     protected $casts = [
-        'expire_time'=>'datetime:Y-m-d H:i:s',
+        'expire_time'=>'datetime',
     ];
 
     /**

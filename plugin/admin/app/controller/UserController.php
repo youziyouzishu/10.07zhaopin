@@ -90,7 +90,7 @@ class UserController extends Crud
             $hr_type = $request->post('hr_type');
             $user = \app\admin\model\User::find($id);
             if (!empty($vip_expire_at) && $vip_expire_at != $user->vip_expire_at) {
-                Client::send('job', ['event' => 'vip_expire', 'user_id' => $user->id], $user->vip_expire_at->timestamp - time());
+                Client::send('job', ['event' => 'vip_expire', 'user_id' => $user->id], strtotime($vip_expire_at) - time());
             }
             if ($user->hr_type == 1 && in_array($hr_type, [2, 3])) {
                 //普通HR->认证超级HR

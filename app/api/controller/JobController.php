@@ -52,10 +52,13 @@ class JobController extends Base
 
         $query = Resume::where(['default' => 1])
             //先按照用户的在线状态排序
-            ->with(['user' => function ($builder) {
-                $builder->orderByDesc('online');
-            }])
+            ->with(['user'])
             ->with(['skill'])
+            ->orderBy(
+                User::select('online')
+                    ->whereColumn('id', 'wa_resume.user_id'),
+                'desc'
+            )
             ->whereHas('user', function (Builder $query) {
                 $query->where('show_status', 1);
             })
@@ -467,7 +470,8 @@ class JobController extends Base
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
-            Log::error($e->getMessage());
+            Log::emergency('createJob');
+            Log::emergency($e->getMessage());
             return $this->fail('失败');
         }
         return $this->success('成功');
@@ -589,7 +593,7 @@ class JobController extends Base
             $row->minimum_full_time_internship_experience_years = $minimum_full_time_internship_experience_years;
             $row->minimum_internship_experience_number = $minimum_internship_experience_number;
             $row->top_secret = $top_secret;
-            $row->graduation_date = $graduation_date;
+            $row->graduation_date = empty($graduation_date) ? null : $graduation_date;;
             $row->position_location = $position_location;
             $row->expected_number_of_candidates = empty($expected_number_of_candidates) ? null : $expected_number_of_candidates;
             $row->from_limitation = $from_limitation;
@@ -614,7 +618,8 @@ class JobController extends Base
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
-            Log::error($e->getMessage());
+            Log::emergency('publish');
+            Log::emergency($e->getMessage());
             return $this->fail('失败');
         }
 
