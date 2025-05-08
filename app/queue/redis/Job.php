@@ -184,13 +184,16 @@ class Job implements Consumer
                         $user->resume()->where(['default' => 0])->delete();
                     } else {
                         #如果是HR  简历只保留最后修改的三个  其余的下架
-                        $user->job()
+                        $jobs = $user->job()
                             ->where(['status' => 1])
                             ->orderBy('updated_at', 'desc')
                             ->offset(3)
-                            ->update([
-                                'status' => 0
-                            ]);
+                            ->limit(PHP_INT_MAX)
+                            ->get();
+                        $jobs->each(function ($job) {
+                            $job->status = 0;
+                            $job->save();
+                        });
                     }
                 }
             }

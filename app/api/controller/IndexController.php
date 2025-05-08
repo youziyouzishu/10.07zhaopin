@@ -24,20 +24,7 @@ class IndexController extends Base
 
     function index(Request $request)
     {
-        // 初始金额
-        $initialAmount = 100;
 
-        // 复利利率
-        $interestRate = 0.1;
-
-        // 天数
-        $days = 4;
-
-        // 计算复利后的金额
-        $finalAmount = $initialAmount * pow((1 + $interestRate), $days);
-
-        // 输出结果
-        dump( number_format($finalAmount, 2) . ' 元');
     }
 
     function resume(Request $request)

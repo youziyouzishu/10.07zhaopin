@@ -431,15 +431,11 @@ class JobController extends Base
         }
 
         $job_count = $user->job()->count();
-        if ($user->vip_status) {
-            if ($job_count >= 15) {
-                return $this->fail('vip用户最多只能创建15个岗位');
-            }
+        if ($job_count >= 15) {
+            return $this->fail('最多只能创建15个岗位');
+        }
 
-        } else {
-            if ($job_count >= 3) {
-                return $this->fail('非vip用户最多只能创建3个岗位');
-            }
+        if (!$user->vip_status) {
             if (!empty($degree_qs_ranking) || !empty($degree_us_ranking)) {
                 return $this->fail('非vip用户不能设置qs_ranking和us_ranking');
             }
@@ -602,11 +598,21 @@ class JobController extends Base
         }
 
         $user = User::find($request->user_id);
+        $job_count = $user->job()->where('status',1)->count();#上架的岗位
         if (!$user->vip_status) {
+            if ($job_count >= 3) {
+                return $this->fail('非vip用户最多只能上架3个岗位');
+            }
+
             if (!empty($degree_qs_ranking) || !empty($degree_us_ranking)) {
                 return $this->fail('非vip用户不能设置qs_ranking和us_ranking');
             }
+        }else{
+            if ($job_count >= 15) {
+                return $this->fail('vip用户最多只能上架15个岗位');
+            }
         }
+
 
 
         DB::connection('plugin.admin.mysql')->beginTransaction();
