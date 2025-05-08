@@ -16,4 +16,6 @@ class Job extends Validate
         'adult'=>'require',
         'sponsorship'=>'require',
     ];
+
+
 }

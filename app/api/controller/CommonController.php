@@ -101,10 +101,15 @@ class CommonController extends Base
         return $this->success('成功', $config);
     }
 
-    #获取轮播图
-    function getBannerList()
+    #获取轮播图 user_type 用户类型:0=seeker=求职者,1=hr=招聘者
+    function getBannerList(Request $request)
     {
-        $rows = Banner::orderByDesc('weigh')->get();
+        if ($request->user_type == 0){
+            $type = 2;
+        }else{
+            $type = 1;
+        }
+        $rows = Banner::where('type',$type)->orderByDesc('weigh')->get();
         return $this->success('成功', $rows);
     }
 

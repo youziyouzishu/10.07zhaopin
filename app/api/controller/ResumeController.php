@@ -166,10 +166,10 @@ class ResumeController extends Base
                         // 处理特殊情况的否定条件
                         $q->whereRaw('wa_job.degree_requirements < ?', [$resume->top_degree])
                             ->where(function ($sub) {
-                                $sub->where('wa_job.overall_gpa_requirement', '>', 0)
-                                    ->orWhere('wa_job.major_gpa_requirement', '>', 0)
-                                    ->orWhere('wa_job.degree_qs_ranking', '>', 0)
-                                    ->orWhere('wa_job.degree_us_ranking', '>', 0);
+                                $sub->where('wa_job.overall_gpa_requirement','>', 0)
+                                    ->where('wa_job.major_gpa_requirement','>', 0)
+                                    ->where('wa_job.degree_qs_ranking','>', 0)
+                                    ->where('wa_job.degree_us_ranking','>', 0);
                             });
                     });
                 })
@@ -341,7 +341,7 @@ class ResumeController extends Base
             return $resumeSkills->contains($skill);
         });
         if (!$allSkillsMatch) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求10');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求1');
         }
         #学历匹配
         $degreeRequirements = $job->degree_requirements;
@@ -372,7 +372,7 @@ class ResumeController extends Base
                     $usCondition;
             });
             if ($filteredEducationalBackground->isEmpty()) {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求2');
             }
         } else {
             // 不符合
@@ -382,10 +382,10 @@ class ResumeController extends Base
                 $degreeQsRanking = $job->degree_qs_ranking;
                 $degreeUsRanking = $job->degree_us_ranking;
                 if ($overallGpaRequirement != 0 || $majorGpaRequirement != 0 || $degreeQsRanking != 0 || $degreeUsRanking != 0) {
-                    return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+                    return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求3');
                 }
             } else {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求4');
             }
         }
 
@@ -397,7 +397,7 @@ class ResumeController extends Base
                 return $projectSkills->contains($skill);
             });
             if (!$allSkillsMatch) {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求5');
             }
         }
 
@@ -409,7 +409,7 @@ class ResumeController extends Base
                 return $internshipSkills->contains($skill);
             });
             if (!$allSkillsMatch) {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求6');
             }
         }
 
@@ -421,28 +421,28 @@ class ResumeController extends Base
                 return $fulltimeSkills->contains($skill);
             });
             if (!$allSkillsMatch) {
-                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+                return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求7');
             }
         }
 
         //全职工作最低年限要求
         if ($resume->total_full_time_experience_years < $job->minimum_full_time_internship_experience_years) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求8');
         }
 
         //实习工作最低段数要求
         if ($resume->total_internship_experience_number < $job->minimum_internship_experience_number) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求9');
         }
 
         //应届生毕业日期
         if (!empty($job->graduation_date) && $resume->end_graduation_date != $job->graduation_date) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求10');
         }
 
         //是否允许已申请用户重复申请
         if ($job->allow_duplicate_application == 0 && $resume->sendLog()->where('job_id', $job->id)->count() > 0) {
-            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求');
+            return $this->fail('岗位要求可能已经更新，你的背景不符合岗位要求11');
         }
 
 

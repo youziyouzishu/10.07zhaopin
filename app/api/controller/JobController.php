@@ -18,6 +18,7 @@ use plugin\smsbao\api\Smsbao;
 use support\Cache;
 use support\Db;
 use support\Log;
+use support\Model;
 use support\Request;
 use Webman\RateLimiter\Limiter;
 use Webman\RateLimiter\RateLimitException;
@@ -41,7 +42,7 @@ class JobController extends Base
         $major = $request->post('major');#专业要求 接口获取
         $major_gpa = $request->post('major_gpa');#专业绩点 接口获取
         $minimum_full_time_internship_experience_years = $request->post('minimum_full_time_internship_experience_years');#全职工作年限 接口获取
-        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1])->first();#默认岗位
+        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1, 'status' => 1])->first();#默认岗位
         if (!$defaultJob) {
             return $this->fail('请先设置默认岗位');
         }
@@ -282,7 +283,7 @@ class JobController extends Base
     function getUSRanking(Request $request)
     {
         $degree = $request->post('degree');#2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位
-        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1])->first();#默认岗位
+        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1, 'status' => 1])->first();#默认岗位
         if (!$defaultJob) {
             return $this->fail('请先设置默认岗位');
         }
@@ -309,7 +310,7 @@ class JobController extends Base
     function getCumulativeGpa(Request $request)
     {
         $degree = $request->post('degree');#2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位
-        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1])->first();#默认岗位
+        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1, 'status' => 1])->first();#默认岗位
         if (!$defaultJob) {
             return $this->fail('请先设置默认岗位');
         }
@@ -325,7 +326,7 @@ class JobController extends Base
     function getMajorGpa(Request $request)
     {
         $degree = $request->post('degree');#2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位
-        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1])->first();#默认岗位
+        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1, 'status' => 1])->first();#默认岗位
         if (!$defaultJob) {
             return $this->fail('请先设置默认岗位');
         }
@@ -340,7 +341,7 @@ class JobController extends Base
     function getMajor(Request $request)
     {
         $degree = $request->post('degree');#2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位
-        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1])->first();#默认岗位
+        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1, 'status' => 1])->first();#默认岗位
         if (!$defaultJob) {
             return $this->fail('请先设置默认岗位');
         }
@@ -356,7 +357,7 @@ class JobController extends Base
     function getFullTimeInternshipExperienceYears(Request $request)
     {
         $degree = $request->post('degree');#2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位
-        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1])->first();#默认岗位
+        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1, 'status' => 1])->first();#默认岗位
         if (!$defaultJob) {
             return $this->fail('请先设置默认岗位');
         }
@@ -406,6 +407,20 @@ class JobController extends Base
         $skill = $request->post('skill'); # 数组 [{"name":"xx"},{"name":"xx"}]
         $nice_skill = $request->post('nice_skill'); # 数组 [{"name":"xx"},{"name":"xx"}]
         if (!empty($minimum_salary) || !empty($maximum_salary)) {
+
+            if (!empty($minimum_salary)) {
+                if ($minimum_salary < 0 || $minimum_salary > 100000000) {
+                    return $this->fail('薪资范围错误');
+                }
+            }
+
+            if (!empty($maximum_salary)) {
+                if ($maximum_salary < 0 || $maximum_salary > 100000000) {
+                    return $this->fail('薪资范围错误');
+                }
+            }
+
+
             if ($minimum_salary > $maximum_salary) {
                 return $this->fail('薪资范围错误');
             }
@@ -472,7 +487,7 @@ class JobController extends Base
             DB::connection('plugin.admin.mysql')->rollBack();
             Log::emergency('createJob');
             Log::emergency($e->getMessage());
-            return $this->fail('失败');
+            return $this->fail($e->getMessage());
         }
         return $this->success('成功');
     }
@@ -498,15 +513,22 @@ class JobController extends Base
         if (empty($row)) {
             return $this->fail('岗位不存在');
         }
-        Job::where(['user_id' => $request->user_id])->where('id', '<>', $job_id)->update(['default' => 0]);
+
+        // 临时禁用时间戳
+        Job::withoutTimestamps(function () use ($request, $job_id) {
+            Job::where(['user_id' => $request->user_id])->where('id', '<>', $job_id)
+                ->update(['default' => 0]);
+        });
+
         $row->default = 1;
+        $row->timestamps = false;
         $row->save();
         return $this->success('成功');
     }
 
     function getDefaultJob(Request $request)
     {
-        $row = Job::with(['user'])->where(['user_id' => $request->user_id, 'default' => 1])->first();
+        $row = Job::with(['user'])->where(['user_id' => $request->user_id, 'default' => 1 , 'status' => 1])->first();
         if (empty($row)) {
             return $this->fail('岗位不存在');
         }
@@ -552,8 +574,26 @@ class JobController extends Base
         $skill = $request->post('skill'); # 数组 [{"name":"xx"},{"name":"xx"}]
         $nice_skill = $request->post('nice_skill'); # 数组 [{"name":"xx"},{"name":"xx"}]
         if (!empty($minimum_salary) || !empty($maximum_salary)) {
+            if (!empty($minimum_salary)) {
+                if ($minimum_salary < 0 || $minimum_salary > 100000000) {
+                    return $this->fail('薪资范围错误');
+                }
+            }
+
+            if (!empty($maximum_salary)) {
+                if ($maximum_salary < 0 || $maximum_salary > 100000000) {
+                    return $this->fail('薪资范围错误');
+                }
+            }
+
+
             if ($minimum_salary > $maximum_salary) {
                 return $this->fail('薪资范围错误');
+            }
+        }
+        if (!empty($expected_number_of_candidates)) {
+            if ($expected_number_of_candidates > 100000 || $expected_number_of_candidates < 0) {
+                return $this->fail('投递人数输入错误');
             }
         }
         $row = Job::find($job_id);
@@ -620,7 +660,7 @@ class JobController extends Base
             DB::connection('plugin.admin.mysql')->rollBack();
             Log::emergency('publish');
             Log::emergency($e->getMessage());
-            return $this->fail('失败');
+            return $this->fail($e);
         }
 
         return $this->success('成功');
@@ -643,7 +683,7 @@ class JobController extends Base
     function getJobDetail(Request $request)
     {
         $job_id = $request->post('job_id');
-        $row = Job::with(['skill', 'niceSkill', 'major'])->find($job_id);
+        $row = Job::with(['skill', 'niceSkill', 'major'])->withCount('sendLog')->find($job_id);
         return $this->success('成功', $row);
     }
 
@@ -743,7 +783,7 @@ class JobController extends Base
             }
         }
         $resume = Resume::find($resume_id);
-        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1])->first();#默认岗位
+        $defaultJob = Job::where(['user_id' => $request->user_id, 'default' => 1 , 'status' => 1])->first();#默认岗位
         if (!$defaultJob) {
             return $this->fail('请先设置默认岗位');
         }
