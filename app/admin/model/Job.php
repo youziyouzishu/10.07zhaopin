@@ -49,6 +49,10 @@ use plugin\admin\app\model\Base;
  * @property int $allow_duplicate_application 是否允许已申请用户重复申请:0=false,1=true
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \app\admin\model\SendLog> $sendLog
  * @property \Illuminate\Support\Carbon|null $expire_time 过期时间
+ * @property \Illuminate\Support\Carbon|null $deleted_at 删除时间
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Job onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Job withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Job withoutTrashed()
  * @mixin \Eloquent
  */
 class Job extends Base

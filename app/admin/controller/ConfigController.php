@@ -8,6 +8,7 @@ use support\Request;
 use support\Response;
 use plugin\admin\app\controller\Crud;
 use support\exception\BusinessException;
+use Webman\RedisQueue\Client;
 
 /**
  * 系统配置
@@ -131,6 +132,17 @@ class ConfigController extends Crud
         $name = 'admin_config';
         $option = new Option();
         $row = $option->where('name', $name)->first();
+        $value = json_decode($row->value);
+        if ($value->resume_compensation != $data['resume_compensation']){
+            //候选人队列补偿
+            Client::send('job', ['event' => 'resume_compensation','days' => $data['resume_compensation_day']], $resume_compensation->diffInSeconds(Carbon::now()));
+        }
+
+        if ($value->hr_compensation != $data['hr_compensation']){
+            //HR队列补偿
+            Client::send('job', ['event' => 'resume_compensation','days' => $data['hr_compensation_day']], $hr_compensation->diffInSeconds(Carbon::now()));
+        }
+
         if ($row){
             $row->value = json_encode($data);
             $row->save();
@@ -139,6 +151,8 @@ class ConfigController extends Crud
             $option->value = json_encode($data);
             $option->save();
         }
+
+
 
         return $this->json(0);
     }

@@ -17,6 +17,7 @@ use plugin\admin\app\model\Base;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Subscribe newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Subscribe newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Subscribe query()
+ * @property-read \app\admin\model\User|null $user
  * @mixin \Eloquent
  */
 class Subscribe extends Base
@@ -39,4 +40,9 @@ class Subscribe extends Base
         'user_id',
         'company_name',
     ];
+
+    function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
 }

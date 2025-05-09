@@ -5,6 +5,8 @@ namespace app\admin\model;
 use plugin\admin\app\model\Base;
 
 /**
+ * 
+ *
  * @property integer $id 主键(主键)
  * @property integer $type 类型:1=HR,2=Seeker
  * @property string $title 标题
@@ -12,6 +14,10 @@ use plugin\admin\app\model\Base;
  * @property string $image 图片
  * @property string $created_at 创建时间
  * @property string $updated_at 更新时间
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SystemNotice newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SystemNotice newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SystemNotice query()
+ * @mixin \Eloquent
  */
 class SystemNotice extends Base
 {

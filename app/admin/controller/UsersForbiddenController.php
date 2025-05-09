@@ -98,6 +98,15 @@ class UsersForbiddenController extends Crud
             $id = $this->doInsert($data);
             $row = UsersForbidden::find($id);
             $users_forbid = UsersForbidden::where('user_id', $row->user_id)->orderByDesc('expired_at')->first();
+            if ($row->user->type == 0){
+                $row->user->show_status = 0;
+                $row->user->save();
+            }else{
+                $row->user->job->each(function ($job) use ($row) {
+                    $job->status = 0;
+                    $job->save();
+                });
+            }
             if ($users_forbid->id == $row->id) {
                 $day = (int)ceil($row->created_at->diffInDays($row->expired_at));
                 Client::send('job', [
@@ -105,8 +114,8 @@ class UsersForbiddenController extends Crud
                     'email' => $row->user->email,
                     'template' => 'forbid_notice',
                     'reason'=>$row->reason,
-                    'created_at'=>$row->created_at,
-                    'expired_at'=>$row->expired_at,
+                    'created_at'=>$row->created_at->toDateTimeString(),
+                    'expired_at'=>$row->expired_at->toDateTimeString(),
                     'day'=>$day
                 ]);
             }
@@ -124,7 +133,35 @@ class UsersForbiddenController extends Crud
     public function update(Request $request): Response
     {
         if ($request->method() === 'POST') {
-            return parent::update($request);
+            $expired_at = $request->post('expired_at');
+            $expired_at = Carbon::parse($expired_at);
+            $id = $request->post('id');
+            $row = UsersForbidden::find($id);
+            [$id, $data] = $this->updateInput($request);
+            $this->doUpdate($id, $data);
+            if ($expired_at != $row->expired_at) {
+                //代表更新了过期时间
+                if ($expired_at->isPast()) {
+                    //代表解封了
+                }else{
+                    //封的更长时间了
+                    $users_forbid = UsersForbidden::where('user_id', $row->user_id)->orderByDesc('expired_at')->first();
+                    if ($users_forbid->id == $row->id) {
+                        dump('发送信息');
+                        $day = (int)ceil($row->created_at->diffInDays($row->expired_at));
+                        Client::send('job', [
+                            'event' => 'forbid_notice',
+                            'email' => $row->user->email,
+                            'template' => 'forbid_notice',
+                            'reason'=>$row->reason,
+                            'created_at'=>$row->created_at->toDateTimeString(),
+                            'expired_at'=>$row->expired_at->toDateTimeString(),
+                            'day'=>$day
+                        ]);
+                    }
+                }
+            }
+            return $this->json(0);
         }
         return view('users-forbidden/update');
     }

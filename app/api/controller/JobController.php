@@ -8,6 +8,7 @@ use app\admin\model\Job;
 use app\admin\model\Major;
 use app\admin\model\Resume;
 use app\admin\model\SendLog;
+use app\admin\model\Subscribe;
 use app\admin\model\User;
 use app\admin\model\UsersHr;
 use app\api\basic\Base;
@@ -478,6 +479,16 @@ class JobController extends Base
             $job->major()->createMany($major);
             $job->skill()->createMany($skill);
             $job->niceSkill()->createMany($nice_skill);
+
+            $company_name = $job->user->company_name;
+            $subscribe = Subscribe::where('company_name', $company_name)->get();
+            foreach ($subscribe as $item) {
+                if ($item->user->notice_type  == 0){
+                    #邮箱通知
+                }else{
+                    #短信通知
+                }
+            }
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
@@ -682,6 +693,7 @@ class JobController extends Base
             ->withCount(['sendLog' => function ($query) {
                 $query->whereRaw('wa_send_log.created_at > wa_job.updated_at');
             }])
+            ->orderByDesc('updated_at')
             ->get();
         return $this->success('成功', $rows);
     }

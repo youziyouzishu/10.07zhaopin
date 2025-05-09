@@ -94,6 +94,7 @@ class UserController extends Base
                 'hr_type' => $request->user_type == 0 ? 0 : 1,
                 'salutation' => $request->user_type == 0 ? 'I am very interested in this position and would love the opportunity to learn more. I have carefully reviewed the job requirements and believe that my experience and skills make me a strong fit. I look forward to your feedback!' : 'I am very interested in your background. Could you share your resume with me?'
             ]);
+
             #注册送会员
             $name = 'admin_config';
             $config = Option::where('name', $name)->value('value');
@@ -132,8 +133,8 @@ class UserController extends Base
     function cancel(Request $request)
     {
         $user = User::find($request->user_id);
-        $user->resume()->update(['default' => 0]);
-        $user->job()->update(['status' => 0]);
+        $user->resume()->delete();
+        $user->job()->delete();
         $user->delete();
         return $this->success('注销成功');
     }

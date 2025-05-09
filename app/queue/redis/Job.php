@@ -155,46 +155,46 @@ class Job implements Consumer
             ]);
         }
 
+        if ($event == 'resume_compensation') {
+            //候选人队列补偿
+            $days = $data['days'];
+            $users = User::where('type', 0)->where('vip_expire_at', '>', Carbon::now())->get();
+            $users->each(function (User $user) use ($days) {
+                $user->vip_expire_at = $user->vip_expire_at->addDays($days);
+                $user->save();
+            });
+        }
+
+        if ($event == 'hr_compensation') {
+            //HR队列补偿
+            $days = $data['days'];
+            $users = User::where('type', 1)->where('vip_expire_at', '>', Carbon::now())->get();
+            $users->each(function (User $user) use ($days) {
+                $user->vip_expire_at = $user->vip_expire_at->addDays($days);
+                $user->save();
+            });
+        }
+
         if ($event == 'vip_expire') {
             $user_id = $data['user_id'];
             $user = User::find($user_id);
             if ($user && !$user->vip_status) {
                 #进行vip过期处理
-                $name = 'admin_config';
-                $config = Option::where('name', $name)->value('value');
-                $config = json_decode($config);
-                $current_time = Carbon::now();
                 if ($user->type == 0) {
-                    $add_days = $config->resume_compensation_day;
-                    $compensation = $config->resume_compensation;
+                    #如果是求职者  简历只保留默认的  其余的删除
+                    $user->resume()->where(['default' => 0])->delete();
                 } else {
-                    $add_days = $config->hr_compensation_day;
-                    $compensation = $config->hr_compensation;
-                }
-                $compensation = Carbon::parse($compensation);
-                if ($current_time->isBefore($compensation)) {
-                    #进行活动补偿
-                    $user->vip_expire_at = $current_time->addDays($add_days);
-                    $user->save();
-                    Client::send('job', ['event' => 'vip_expire', 'user_id' => $user->id], $user->vip_expire_at->timestamp - time());
-                } else {
-                    #这次是真过期了
-                    if ($user->type == 0) {
-                        #如果是求职者  简历只保留默认的  其余的删除
-                        $user->resume()->where(['default' => 0])->delete();
-                    } else {
-                        #如果是HR  简历只保留最后修改的三个  其余的下架
-                        $jobs = $user->job()
-                            ->where(['status' => 1])
-                            ->orderBy('updated_at', 'desc')
-                            ->offset(3)
-                            ->limit(PHP_INT_MAX)
-                            ->get();
-                        $jobs->each(function ($job) {
-                            $job->status = 0;
-                            $job->save();
-                        });
-                    }
+                    #如果是HR  简历只保留最后修改的三个  其余的下架
+                    $jobs = $user->job()
+                        ->where(['status' => 1])
+                        ->orderBy('updated_at', 'desc')
+                        ->offset(3)
+                        ->limit(PHP_INT_MAX)
+                        ->get();
+                    $jobs->each(function ($job) {
+                        $job->status = 0;
+                        $job->save();
+                    });
                 }
             }
 
