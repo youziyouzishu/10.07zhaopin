@@ -110,6 +110,25 @@ class Job implements Consumer
             Email::sendByTemplate($email, 'delete_hr_2');
         }
 
+        if ($event == 'subscribe_notice_ems') {
+            $email = $data['email'];
+            $companyName = $data['companyName'];
+            $userName = $data['userName'];
+            $jobTitle = $data['jobTitle'];
+            $jobLink = $data['jobLink'];
+            Email::sendByTemplate($email, 'subscribe_notice_ems', [
+                'companyName' => $companyName,
+                'userName' => $userName,
+                'jobTitle' => $jobTitle,
+                'jobLink' => $jobLink
+            ]);
+        }
+
+        if ($event == 'subscribe_notice_sms') {
+            $url = $data['url'];
+            file_get_contents($url);
+        }
+
         if ($event == 'hr_adjust') {
             $email = $data['email'];
             $name = $data['name'];

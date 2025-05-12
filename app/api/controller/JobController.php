@@ -483,10 +483,19 @@ class JobController extends Base
             $company_name = $job->user->company_name;
             $subscribe = Subscribe::where('company_name', $company_name)->get();
             foreach ($subscribe as $item) {
+                $jobLink = 'https://1007zhaopin.62.hzgqapp.com/web/index.html#/pages/home/detail?id='.$job->id;
                 if ($item->user->notice_type  == 0){
                     #邮箱通知
+                    Client::send('job', ['event' => 'subscribe_notice_ems', 'email' => $item->user->email,'companyName' => $company_name,'userName'=>$item->user->nickname,'jobTitle'=>$job->position_name,'jobLink'=>$jobLink]);
                 }else{
                     #短信通知
+                    $content = "Hi {$item->user->nickname}, {$company_name} just posted a new job: \"{$job->position_name}\", which matches your profile. View details: {$jobLink}";
+                    $account = Smsbao::getSmsbaoAccount();
+                    if (!$account) {
+                        return $this->fail('未配置发信账户');
+                    }
+                    $sendUrl = Smsbao::SMSBAO_URL . 'wsms?sms&u=' . $account['Username'] . '&p=' . $account['Password'] . '&m=' . urlencode('+1' . $item->user->mobile) . '&c=' . urlencode($content);
+                    Client::send('job', ['event' => 'subscribe_notice_sms', 'url' => $sendUrl]);
                 }
             }
             DB::connection('plugin.admin.mysql')->commit();
