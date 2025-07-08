@@ -88,10 +88,7 @@ class ReportController extends Crud
         }
         $user = User::find($user_id);
         $to_user = User::find($to_user_id);
-        dump($user_id);
-        dump($to_user_id);
         $result = TencentIM::getInstance()->adminGetroammsg($user_id, $to_user_id, $count,$time[0],$time[1]);
-        dump($result);
         $result = json_decode($result);
         $result = $result->MsgList;
         $data = [];

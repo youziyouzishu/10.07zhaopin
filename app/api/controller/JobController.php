@@ -376,7 +376,7 @@ class JobController extends Base
     {
         try {
             #限流器 每个用户1秒内只能请求1次
-            Limiter::check('user_' . $request->user_id, 1, 10);
+            Limiter::check('user_' . $request->user_id, 1, 5);
         } catch (RateLimitException $e) {
             return $this->fail('请求频繁');
         }
@@ -479,25 +479,6 @@ class JobController extends Base
             $job->major()->createMany($major);
             $job->skill()->createMany($skill);
             $job->niceSkill()->createMany($nice_skill);
-
-            $company_name = $job->user->company_name;
-            $subscribe = Subscribe::where('company_name', $company_name)->get();
-            foreach ($subscribe as $item) {
-                $jobLink = 'https://1007zhaopin.62.hzgqapp.com/web/index.html#/pages/home/detail?id='.$job->id;
-                if ($item->user->notice_type  == 0){
-                    #邮箱通知
-                    Client::send('job', ['event' => 'subscribe_notice_ems', 'email' => $item->user->email,'companyName' => $company_name,'userName'=>$item->user->nickname,'jobTitle'=>$job->position_name,'jobLink'=>$jobLink]);
-                }else{
-                    #短信通知
-                    $content = "Hi {$item->user->nickname}, {$company_name} just posted a new job: \"{$job->position_name}\", which matches your profile. View details: {$jobLink}";
-                    $account = Smsbao::getSmsbaoAccount();
-                    if (!$account) {
-                        return $this->fail('未配置发信账户');
-                    }
-                    $sendUrl = Smsbao::SMSBAO_URL . 'wsms?sms&u=' . $account['Username'] . '&p=' . $account['Password'] . '&m=' . urlencode('+1' . $item->user->mobile) . '&c=' . urlencode($content);
-                    Client::send('job', ['event' => 'subscribe_notice_sms', 'url' => $sendUrl]);
-                }
-            }
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {
             DB::connection('plugin.admin.mysql')->rollBack();
@@ -612,8 +593,8 @@ class JobController extends Base
                 return $this->fail('投递人数输入错误');
             }
         }
-        $row = Job::find($job_id);
-        if (!$row || $row->status != 0) {
+        $job = Job::find($job_id);
+        if (!$job || $job->status != 0) {
             return $this->fail('岗位不存在');
         }
 
@@ -637,49 +618,67 @@ class JobController extends Base
 
         DB::connection('plugin.admin.mysql')->beginTransaction();
         try {
-            $row->major()->delete();
-            $row->skill()->delete();
-            $row->niceSkill()->delete();
-            $row->position_name = $position_name;
-            $row->position_description = $position_description;
-            $row->minimum_salary = empty($minimum_salary) ? 0 : $minimum_salary;
-            $row->maximum_salary = empty($maximum_salary) ? 0 : $maximum_salary;
-            $row->position_type = $position_type;
-            $row->adult = $adult;
-            $row->work_mode = $work_mode;
-            $row->sponsorship = $sponsorship;
-            $row->project_tech_stack_match = $project_tech_stack_match;
-            $row->internship_tech_stack_match = $internship_tech_stack_match;
-            $row->full_time_tech_stack_match = $full_time_tech_stack_match;
-            $row->degree_requirements = $degree_requirements;
-            $row->degree_qs_ranking = empty($degree_qs_ranking) ? 0 : $degree_qs_ranking;
-            $row->degree_us_ranking = empty($degree_us_ranking) ? 0 : $degree_us_ranking;;
-            $row->overall_gpa_requirement = $overall_gpa_requirement;
-            $row->major_gpa_requirement = empty($major_gpa_requirement) ? 0 : $major_gpa_requirement;
-            $row->minimum_full_time_internship_experience_years = $minimum_full_time_internship_experience_years;
-            $row->minimum_internship_experience_number = $minimum_internship_experience_number;
-            $row->top_secret = $top_secret;
-            $row->graduation_date = empty($graduation_date) ? null : $graduation_date;;
-            $row->position_location = $position_location;
-            $row->expected_number_of_candidates = empty($expected_number_of_candidates) ? null : $expected_number_of_candidates;
-            $row->from_limitation = $from_limitation;
-            $row->us_citizen = $us_citizen;
-            $row->allow_duplicate_application = $allow_duplicate_application;
-            $row->expire_time = empty($row->user->vip_expire_at) || $row->user->vip_expire_at->isPast() ? Carbon::now()->addDays(7)->toDateTimeString() : Carbon::now()->addDays(14)->toDateTimeString();
-            $row->status = 1;
-            $row->save();
-            $row->major()->createMany($major);
-            $row->skill()->createMany($skill);
-            $row->niceSkill()->createMany($nice_skill);
-            if ($row->allow_duplicate_application == 1) {
-                $row->sendLog->each(function (SendLog $log) {
+            $job->major()->delete();
+            $job->skill()->delete();
+            $job->niceSkill()->delete();
+            $job->position_name = $position_name;
+            $job->position_description = $position_description;
+            $job->minimum_salary = empty($minimum_salary) ? 0 : $minimum_salary;
+            $job->maximum_salary = empty($maximum_salary) ? 0 : $maximum_salary;
+            $job->position_type = $position_type;
+            $job->adult = $adult;
+            $job->work_mode = $work_mode;
+            $job->sponsorship = $sponsorship;
+            $job->project_tech_stack_match = $project_tech_stack_match;
+            $job->internship_tech_stack_match = $internship_tech_stack_match;
+            $job->full_time_tech_stack_match = $full_time_tech_stack_match;
+            $job->degree_requirements = $degree_requirements;
+            $job->degree_qs_ranking = empty($degree_qs_ranking) ? 0 : $degree_qs_ranking;
+            $job->degree_us_ranking = empty($degree_us_ranking) ? 0 : $degree_us_ranking;;
+            $job->overall_gpa_requirement = $overall_gpa_requirement;
+            $job->major_gpa_requirement = empty($major_gpa_requirement) ? 0 : $major_gpa_requirement;
+            $job->minimum_full_time_internship_experience_years = $minimum_full_time_internship_experience_years;
+            $job->minimum_internship_experience_number = $minimum_internship_experience_number;
+            $job->top_secret = $top_secret;
+            $job->graduation_date = empty($graduation_date) ? null : $graduation_date;;
+            $job->position_location = $position_location;
+            $job->expected_number_of_candidates = empty($expected_number_of_candidates) ? null : $expected_number_of_candidates;
+            $job->from_limitation = $from_limitation;
+            $job->us_citizen = $us_citizen;
+            $job->allow_duplicate_application = $allow_duplicate_application;
+            $job->expire_time = empty($job->user->vip_expire_at) || $job->user->vip_expire_at->isPast() ? Carbon::now()->addDays(7)->toDateTimeString() : Carbon::now()->addDays(14)->toDateTimeString();
+            $job->status = 1;
+            $job->save();
+            $job->major()->createMany($major);
+            $job->skill()->createMany($skill);
+            $job->niceSkill()->createMany($nice_skill);
+            if ($job->allow_duplicate_application == 1) {
+                $job->sendLog->each(function (SendLog $log) {
                     $log->delete();
                 });
-
             }
-            $queue = Redis::send('job', ['event' => 'job_expire', 'job_id' => $row->id], $row->expire_time->timestamp - time());
+            $queue = Redis::send('job', ['event' => 'job_expire', 'job_id' => $job->id], $job->expire_time->timestamp - time());
             if (!$queue) {
                 throw new \Exception('加入队列失败');
+            }
+            //订阅通知
+            $company_name = $job->user->company_name;
+            $subscribe = Subscribe::where('company_name', $company_name)->get();
+            foreach ($subscribe as $item) {
+                $jobLink = 'https://1007zhaopin.62.hzgqapp.com/web/index.html#/pages/home/detail?id='.$job->id;
+                if ($item->user->notice_type  == 0){
+                    #邮箱通知
+                    Client::send('job', ['event' => 'subscribe_notice_ems', 'email' => $item->user->email,'companyName' => $company_name,'userName'=>$item->user->nickname,'jobTitle'=>$job->position_name,'jobLink'=>$jobLink]);
+                }else{
+                    #短信通知
+                    $content = "Hi {$item->user->nickname}, {$company_name} just posted a new job: \"{$job->position_name}\", which matches your profile. View details: {$jobLink}";
+                    $account = Smsbao::getSmsbaoAccount();
+                    if (!$account) {
+                        return $this->fail('未配置发信账户');
+                    }
+                    $sendUrl = Smsbao::SMSBAO_URL . 'wsms?sms&u=' . $account['Username'] . '&p=' . $account['Password'] . '&m=' . urlencode('+1' . $item->user->mobile) . '&c=' . urlencode($content);
+                    Client::send('job', ['event' => 'subscribe_notice_sms', 'url' => $sendUrl]);
+                }
             }
             DB::connection('plugin.admin.mysql')->commit();
         } catch (\Throwable $e) {

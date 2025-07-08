@@ -128,19 +128,23 @@ class ConfigController extends Crud
             return $this->fail('HR端补偿方式时间不能小于1天');
         }
 
-
         $name = 'admin_config';
         $option = new Option();
         $row = $option->where('name', $name)->first();
         $value = json_decode($row->value);
         if ($value->resume_compensation != $data['resume_compensation']){
             //候选人队列补偿
-            Client::send('job', ['event' => 'resume_compensation','days' => $data['resume_compensation_day']], $resume_compensation->diffInSeconds(Carbon::now()));
+            $second = $resume_compensation->diffInSeconds(Carbon::now(),true);
+            dump('候选人进入队列',$second);
+            Client::send('job', ['event' => 'resume_compensation','days' => $data['resume_compensation_day']], $second);
         }
 
         if ($value->hr_compensation != $data['hr_compensation']){
             //HR队列补偿
-            Client::send('job', ['event' => 'resume_compensation','days' => $data['hr_compensation_day']], $hr_compensation->diffInSeconds(Carbon::now()));
+
+            $second = $hr_compensation->diffInSeconds(Carbon::now(),true);
+            dump('HR进入队列',$second);
+            Client::send('job', ['event' => 'hr_compensation','days' => $data['hr_compensation_day']], $second);
         }
 
         if ($row){

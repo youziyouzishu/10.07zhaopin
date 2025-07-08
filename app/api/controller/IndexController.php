@@ -11,6 +11,7 @@ use app\admin\model\Subscribe;
 use app\admin\model\User;
 use app\admin\model\UsersForbidden;
 use app\api\basic\Base;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use support\Db;
 use support\Request;
@@ -25,8 +26,7 @@ class IndexController extends Base
 
     function index(Request $request)
     {
-        $row = UsersForbidden::find(5);
-        return $this->success('成功',$row);
+
     }
 
     function resume(Request $request)
