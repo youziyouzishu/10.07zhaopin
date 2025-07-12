@@ -12,9 +12,9 @@ class Pay
     {
         $this->gateway = new Gateway([
             'environment' => 'sandbox', // 或 'production'
-            'merchantId' => 'your_merchant_id',
-            'publicKey' => 'your_public_key',
-            'privateKey' => 'your_private_key'
+            'merchantId' => '696p2rvbwjy5ktbc',
+            'publicKey' => 'b2jkd88z2vmm798c',
+            'privateKey' => 'cd7917dd077ed72bda6258f9d8944ba3'
         ]);
     }
 

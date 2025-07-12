@@ -13,6 +13,7 @@ use app\admin\model\SystemNotice;
 use app\admin\model\University;
 use app\admin\model\Vip;
 use app\api\basic\Base;
+use app\api\common\Pay;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use plugin\admin\app\model\Option;
@@ -133,6 +134,18 @@ class CommonController extends Base
         $id = $request->post('id');
         $row = SystemNotice::find($id);
         return $this->success('成功', $row);
+    }
+
+    /**
+     * 生成支付签名
+     * @param Request $request
+     * @return \support\Response
+     */
+    function getPayToken(Request $request)
+    {
+        $pay = new Pay();
+        $result = $pay->getClientToken();
+        return $this->success('成功',$result);
     }
 
 

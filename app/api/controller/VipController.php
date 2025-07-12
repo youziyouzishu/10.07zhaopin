@@ -30,6 +30,13 @@ class VipController extends Base
         return $this->success('成功',['ordersn'=>$ordersn]);
     }
 
+
+
+    /**
+     * 支付
+     * @param Request $request
+     * @return \support\Response
+     */
     function pay(Request $request)
     {
         $ordersn = $request->post('ordersn');

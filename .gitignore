@@ -8,4 +8,4 @@
 /tests/.phpunit.result.cache
 /plugin/admin/public/upload
 /composer.lock
-
+/_ide_helper_eloquent.php

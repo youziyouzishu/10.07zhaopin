@@ -36,7 +36,7 @@
     "phpmailer/phpmailer": "^6.9",
     "webman/log": "^1.2",
     "tencent/tls-sig-api-v2": "^1.1",
-    "braintree/braintree_php": "^6.21",
+    "braintree/braintree_php": "^6.27",
     "symfony/translation": "^7.2",
     "workerman/http-client": "^2.2",
     "symfony/cache": "^7.2",
