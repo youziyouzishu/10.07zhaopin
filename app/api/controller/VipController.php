@@ -11,7 +11,7 @@ use support\Request;
 
 class VipController extends Base
 {
-
+    protected $noNeedLogin = ['pay'];
     #创建订单
     function createOrder(Request $request)
     {
@@ -50,7 +50,7 @@ class VipController extends Base
         $nonce = $request->input('nonce');
         $amount = $request->input('amount');
         $pay = new Pay();
-        $result = $pay->processPayment($nonce, $amount);
+        $result = $pay->processPayment($nonce, $order->pay_amount);
         return $this->success('成功',$result);
     }
 
