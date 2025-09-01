@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Braintree Payment</title>
+  <script src="https://js.braintreegateway.com/web/dropin/1.38.0/js/dropin.min.js"></script>
+</head>
+<body>
+  <div id="dropin-container"></div>
+  <button id="submit-button">确认支付</button>
+
+  <script>
+    const clientToken = new URLSearchParams(window.location.search).get('token');
+
+    braintree.dropin.create({
+      authorization: clientToken,
+      container: '#dropin-container'
+    }).then(function (instance) {
+      document.getElementById('submit-button').addEventListener('click', function () {
+        instance.requestPaymentMethod().then(function (payload) {
+          // 将 nonce 发送到你的后端进行交易
+          fetch('/api/braintree/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentMethodNonce: payload.nonce })
+          }).then(function (result) {
+            if (result.success) {
+              window.parent.postMessage({ type: 'PAYMENT_RESULT', success: true }, '*');
+            } else {
+              window.parent.postMessage({ type: 'PAYMENT_RESULT', success: false }, '*');
+            }
+          });
+        }).catch(function (error) {
+          window.parent.postMessage({ type: 'PAYMENT_RESULT', success: false, error: error }, '*');
+        });
+      });
+    });
+  </script>
+</body>
+</html>
