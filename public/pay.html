@@ -18,10 +18,10 @@
       document.getElementById('submit-button').addEventListener('click', function () {
         instance.requestPaymentMethod().then(function (payload) {
           // 将 nonce 发送到你的后端进行交易
-          fetch('/api/braintree/checkout', {
+          fetch('https://1007zhaopin.62.hzgqapp.com/api/notify/braintree', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ paymentMethodNonce: payload.nonce })
+            body: JSON.stringify({ nonce: payload.nonce })
           }).then(function (result) {
             if (result.success) {
               window.parent.postMessage({ type: 'PAYMENT_RESULT', success: true }, '*');

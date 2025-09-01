@@ -7,6 +7,7 @@ use app\admin\model\UsersHr;
 use app\api\basic\Base;
 use support\Cache;
 use support\exception\BusinessException;
+use support\Log;
 use support\Request;
 
 
@@ -54,5 +55,11 @@ class NotifyController extends Base
         $toUser->hr_type = 2;
         $toUser->save();
         return $this->success('认证成功');
+    }
+
+    function braintree(Request $request)
+    {
+        $params = $request->all();
+
     }
 }
