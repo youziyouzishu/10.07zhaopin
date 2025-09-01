@@ -11,6 +11,7 @@ use plugin\admin\app\model\Base;
  * @property int $id 主键
  * @property string $nickname 昵称
  * @property string $password 密码
+ * @property string $braintree_customer_id BraintreeID
  * @property string $sex 性别
  * @property string|null $avatar 头像
  * @property string|null $email 邮箱
