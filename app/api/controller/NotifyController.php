@@ -4,7 +4,9 @@ namespace app\api\controller;
 
 use app\admin\model\User;
 use app\admin\model\UsersHr;
+use app\admin\model\VipOrders;
 use app\api\basic\Base;
+use Braintree\Gateway;
 use support\Cache;
 use support\exception\BusinessException;
 use support\Log;
@@ -59,8 +61,47 @@ class NotifyController extends Base
 
     function braintree(Request $request)
     {
-        $params = $request->all();
-        Log::info('braintree',$params);
+        $gateway = new Gateway([
+            'environment' => 'sandbox', // 或 'production'
+            'merchantId' => '696p2rvbwjy5ktbc',
+            'publicKey' => 'b2jkd88z2vmm798c',
+            'privateKey' => 'cd7917dd077ed72bda6258f9d8944ba3'
+        ]);
+
+        $webhookNotification = $gateway->webhookNotification()->parse(
+            $request->post('bt_signature'),
+            $request->post('bt_payload')
+        );
+
+        $kind = $webhookNotification->kind;
+
+        switch ($kind) {
+            case 'transaction_disbursed':
+                $transaction = $webhookNotification->transaction;
+                Log::info("单次支付资金结算成功", [
+                    'transaction_id' => $transaction->id,
+                    'amount' => $transaction->amount
+                ]);
+                // 更新订单状态为“已结算”
+                VipOrders::where('transaction_id', $transaction->id)->update(['status' => 2]);
+                break;
+
+            case 'transaction_settlement_declined':
+            case 'transaction_failed':
+                $transaction = $webhookNotification->transaction;
+                Log::warning("单次支付失败或结算拒绝", [
+                    'transaction_id' => $transaction->id,
+                    'amount' => $transaction->amount
+                ]);
+                VipOrders::where('transaction_id', $transaction->id)->update(['status' => 3]);
+                break;
+
+            default:
+                Log::info("其他 webhook 事件", ['kind'=>$kind]);
+                break;
+        }
+
+        return response('OK');
     }
 
 }
