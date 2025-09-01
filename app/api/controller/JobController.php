@@ -32,6 +32,11 @@ use Webman\RedisQueue\Redis;
 class JobController extends Base
 {
 
+    /**
+     * 岗位列表
+     * @param Request $request
+     * @return \support\Response
+     */
     function index(Request $request)
     {
         $online = $request->post('online', '');#候选人在线状态:0=否,1=是
@@ -254,6 +259,11 @@ class JobController extends Base
         return $this->success('成功', $rows);
     }
 
+    /**
+     * 获取QS排名
+     * @param Request $request
+     * @return \support\Response
+     */
     function getQSRanking(Request $request)
     {
         $degree = $request->post('degree');#2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位
@@ -308,6 +318,11 @@ class JobController extends Base
         return $this->success('成功', $data);
     }
 
+    /**
+     * 获取 cumulative_gpa
+     * @param Request $request
+     * @return \support\Response
+     */
     function getCumulativeGpa(Request $request)
     {
         $degree = $request->post('degree');#2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位

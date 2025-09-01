@@ -145,7 +145,7 @@ class CommonController extends Base
     {
         $pay = new Pay();
         $result = $pay->getClientToken();
-        return $this->success('成功',$result);
+        return $this->success('成功',['clientToken'=>$result]);
     }
 
 

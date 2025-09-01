@@ -1,39 +1,147 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-  <title>Braintree Payment</title>
-  <script src="https://js.braintreegateway.com/web/dropin/1.38.0/js/dropin.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Braintree Payment</title>
+    <script src="https://js.braintreegateway.com/web/dropin/1.38.0/js/dropin.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f7f8fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+        }
+        h2 {
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #dropin-container {
+            margin-bottom: 20px;
+        }
+        #submit-button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            background: #007bff;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #submit-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #submit-button.loading {
+            background: #6c757d;
+        }
+        @media (min-width: 768px) {
+            .container {
+                padding: 30px;
+                max-width: 500px;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+            #submit-button {
+                font-size: 18px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div id="dropin-container"></div>
-  <button id="submit-button">确认支付</button>
+<div class="container">
+    <h2>安全支付</h2>
+    <div id="dropin-container"></div>
+    <button id="submit-button" disabled>加载中...</button>
+</div>
 
-  <script>
-    const clientToken = new URLSearchParams(window.location.search).get('token');
+<script>
+    const orderSn = new URLSearchParams(window.location.search).get('orderSn');
+    const submitButton = document.getElementById('submit-button');
 
-    braintree.dropin.create({
-      authorization: clientToken,
-      container: '#dropin-container'
-    }).then(function (instance) {
-      document.getElementById('submit-button').addEventListener('click', function () {
-        instance.requestPaymentMethod().then(function (payload) {
-          // 将 nonce 发送到你的后端进行交易
-          fetch('https://1007zhaopin.62.hzgqapp.com/api/notify/braintree', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nonce: payload.nonce })
-          }).then(function (result) {
-            if (result.success) {
-              window.parent.postMessage({ type: 'PAYMENT_RESULT', success: true }, '*');
-            } else {
-              window.parent.postMessage({ type: 'PAYMENT_RESULT', success: false }, '*');
-            }
-          });
-        }).catch(function (error) {
-          window.parent.postMessage({ type: 'PAYMENT_RESULT', success: false, error: error }, '*');
+    function showMessage(success, message = '') {
+        // 只在支付完成后通知父页面
+        if (window.parent !== window) {
+            window.parent.postMessage({ type: 'PAYMENT_RESULT', success: success, message }, '*');
+        }
+    }
+
+    function setButtonState(text, disabled = false, isLoading = false) {
+        submitButton.textContent = text;
+        submitButton.disabled = disabled;
+        if (isLoading) {
+            submitButton.classList.add('loading');
+        } else {
+            submitButton.classList.remove('loading');
+        }
+    }
+
+    // 初始化支付
+    fetch('https://1007zhaopin.62.hzgqapp.com/api/common/getPayToken', {
+        method: 'POST'
+    })
+        .then(response => response.json())
+        .then(data => {
+            const clientToken = data?.data?.clientToken;
+            if (!clientToken) throw new Error('未获取到 clientToken');
+
+            return braintree.dropin.create({
+                authorization: clientToken,
+                container: '#dropin-container'
+            });
+        })
+        .then(instance => {
+            // 仅在 Drop-in 创建成功后启用按钮
+            setButtonState('立即支付', false);
+
+            submitButton.addEventListener('click', () => {
+                setButtonState('支付中...', true, true);
+
+                instance.requestPaymentMethod()
+                    .then(payload => {
+                        // 用户主动点击支付才发起请求
+                        return fetch('https://1007zhaopin.62.hzgqapp.com/api/vip/pay', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ nonce: payload.nonce, ordersn: orderSn })
+                        });
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.data?.status === 'success') {
+                            showMessage(true, '支付成功！');
+                        } else {
+                            showMessage(false, result.data?.message || '支付失败');
+                        }
+                    })
+                    .catch(error => {
+                        showMessage(false, error.message || '支付请求失败');
+                    })
+                    .finally(() => setButtonState('立即支付', false));
+            });
+        })
+        .catch(error => {
+            console.error('获取 clientToken 失败:', error);
+            setButtonState('加载失败', true);
+            // 取消自动发送消息，用户可以看到错误
+            alert('获取支付凭证失败，请稍后重试');
         });
-      });
-    });
-  </script>
+</script>
+
 </body>
 </html>

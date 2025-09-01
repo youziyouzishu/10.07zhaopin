@@ -3,6 +3,7 @@
 namespace app\api\common;
 
 use Braintree\Gateway;
+use support\Log;
 
 class Pay
 {
@@ -34,12 +35,33 @@ class Pay
             ]
         ]);
 
-        // 检查交易结果
+        // 交易成功
         if ($result->success) {
-            return ['status' => 'success', 'message' => 'Transaction successful'];
-        } else {
-            return ['status' => 'error', 'message' => 'Transaction failed'];
+            $transaction = $result->transaction;
+            return [
+                'success' => true,
+                'transaction_id' => $transaction->id,
+                'status' => $transaction->status,
+                'amount' => $transaction->amount
+            ];
         }
+
+        // 交易失败
+        $errors = [];
+        if (isset($result->transaction)) {
+            // 交易被拒绝或失败，但有交易对象
+            $errors[] = 'Transaction status: ' . $result->transaction->status;
+        }
+
+        // 遍历详细错误信息
+        foreach ($result->errors->deepAll() as $error) {
+            $errors[] = "Error {$error->code}: {$error->message}";
+        }
+
+        return [
+            'success' => false,
+            'errors' => $errors
+        ];
     }
 
 

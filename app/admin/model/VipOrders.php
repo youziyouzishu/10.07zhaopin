@@ -13,6 +13,8 @@ use plugin\admin\app\model\Base;
  * @property string $pay_amount 支付金额
  * @property string $ordersn 订单编号
  * @property int $status 状态:0=待支付,1=已支付
+ * @property string $transaction_id 交易ID
+ * @property string $subscription_id 订阅ID
  * @property \Illuminate\Support\Carbon|null $created_at 创建时间
  * @property \Illuminate\Support\Carbon|null $updated_at 更新时间
  * @method static \Illuminate\Database\Eloquent\Builder<static>|VipOrders newModelQuery()

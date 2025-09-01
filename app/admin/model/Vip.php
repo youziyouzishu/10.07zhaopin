@@ -11,6 +11,7 @@ use plugin\admin\app\model\Base;
  * @property string $name 名称
  * @property string $price 价格
  * @property integer $type 类型:0=求职端,1=招聘端
+ * @property string $plan_id 计划ID
  * @property string $created_at 创建时间
  * @property string $updated_at 更新时间
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vip newModelQuery()

@@ -60,6 +60,7 @@ class NotifyController extends Base
     function braintree(Request $request)
     {
         $params = $request->all();
-
+        Log::info('braintree',$params);
     }
+
 }
