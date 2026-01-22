@@ -107,14 +107,11 @@ class NotifyController extends Base
                 case 'transaction_disbursed': // 单次支付到账
                 case 'subscription_charged_successfully': // 订阅支付或续费成功
                     $order->status = 2; // 已支付/续费成功
-
                     // 订阅支付首次扣款，填充 transaction_id
                     if ($transaction && empty($order->transaction_id)) {
                         $order->transaction_id = $transaction->id;
                     }
-
                     $order->save();
-
                     // 延长会员有效期
                     $expireAt = $order->user->vip_expire_at ? Carbon::parse($order->user->vip_expire_at) : null;
                     if (in_array($order->vip_id,[1,4])){
@@ -127,7 +124,6 @@ class NotifyController extends Base
                             : $expireAt->addYears(1);
                     }
                     $order->user->save();
-
                     Log::info("支付/续费成功", [
                         'ordersn' => $order->ordersn,
                         'transaction_id' => $order->transaction_id,
@@ -135,7 +131,6 @@ class NotifyController extends Base
                         'kind' => $kind
                     ]);
                     break;
-
                 case 'transaction_settlement_declined':
                 case 'transaction_failed':
                 case 'subscription_charged_unsuccessfully':
@@ -149,7 +144,6 @@ class NotifyController extends Base
                         'kind' => $kind
                     ]);
                     break;
-
                 case 'check':
                     Log::info("Webhook测试事件", ['kind' => $kind]);
                     break;

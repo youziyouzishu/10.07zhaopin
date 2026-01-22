@@ -339,6 +339,11 @@ class JobController extends Base
         return $this->success('成功', ['min' => $min]);
     }
 
+    /**
+     * 获取 major_gpa
+     * @param Request $request
+     * @return \support\Response
+     */
     function getMajorGpa(Request $request)
     {
         $degree = $request->post('degree');#2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位
@@ -354,6 +359,11 @@ class JobController extends Base
         return $this->success('成功', ['min' => $min]);
     }
 
+    /**
+     * 获取专业
+     * @param Request $request
+     * @return \support\Response
+     */
     function getMajor(Request $request)
     {
         $degree = $request->post('degree');#2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位
@@ -370,6 +380,11 @@ class JobController extends Base
         return $this->success('成功', $major);
     }
 
+    /**
+     * 获取全职实习经验年数
+     * @param Request $request
+     * @return \support\Response
+     */
     function getFullTimeInternshipExperienceYears(Request $request)
     {
         $degree = $request->post('degree');#2=Bachelor's Degree=本科学位,3=Master's Degree=硕士学位,4=Doctoral Degree (PhD)=博士学位
@@ -385,8 +400,12 @@ class JobController extends Base
         return $this->success('成功', ['min' => $min]);
     }
 
-
-    #创建岗位
+    /**
+     * 创建岗位
+     * @param Request $request
+     * @return \support\Response
+     * @throws \Throwable
+     */
     function createJob(Request $request)
     {
         try {
@@ -505,7 +524,11 @@ class JobController extends Base
     }
 
 
-    #下架
+    /**
+     * 下架岗位
+     * @param Request $request
+     * @return \support\Response
+     */
     function removal(Request $request)
     {
         $job_id = $request->post('job_id');
@@ -518,6 +541,11 @@ class JobController extends Base
         return $this->success('成功');
     }
 
+    /**
+     * 设置默认岗位
+     * @param Request $request
+     * @return \support\Response
+     */
     function setDefaultJob(Request $request)
     {
         $job_id = $request->post('job_id');
@@ -547,7 +575,12 @@ class JobController extends Base
         return $this->success('成功', $row);
     }
 
-    #更新上架
+    /**
+     * 发布岗位
+     * @param Request $request
+     * @return \support\Response
+     * @throws \Throwable
+     */
     function publish(Request $request)
     {
         try {
@@ -706,6 +739,11 @@ class JobController extends Base
         return $this->success('成功');
     }
 
+    /**
+     * 岗位列表
+     * @param Request $request
+     * @return \support\Response
+     */
     function getJobList(Request $request)
     {
         $status = $request->post('status');#状态:0=Removal=下架,1=Publish=上架
@@ -721,6 +759,11 @@ class JobController extends Base
         return $this->success('成功', $rows);
     }
 
+    /**
+     * 岗位详情
+     * @param Request $request
+     * @return \support\Response
+     */
     function getJobDetail(Request $request)
     {
         $job_id = $request->post('job_id');
@@ -728,7 +771,11 @@ class JobController extends Base
         return $this->success('成功', $row);
     }
 
-    #邀请HR
+    /**
+     * 邀请HR
+     * @param Request $request
+     * @return \support\Response
+     */
     function addHr(Request $request)
     {
         $mobile = $request->post('mobile');
@@ -773,6 +820,11 @@ class JobController extends Base
     }
 
 
+    /**
+     * 删除岗位
+     * @param Request $request
+     * @return \support\Response
+     */
     function deleteJob(Request $request)
     {
         $job_id = $request->post('job_id');
@@ -784,7 +836,11 @@ class JobController extends Base
         return $this->success('成功');
     }
 
-    #获取邀请HR列表
+    /**
+     * 获取邀请HR列表
+     * @param Request $request
+     * @return \support\Response
+     */
     function getHrList(Request $request)
     {
         $rows = UsersHr::where(['user_id' => $request->user_id])
@@ -793,7 +849,11 @@ class JobController extends Base
         return $this->success('成功', $rows);
     }
 
-    #删除HR
+    /**
+     * 删除HR
+     * @param Request $request
+     * @return \support\Response
+     */
     function deleteHr(Request $request)
     {
         $hr_id = $request->post('hr_id');

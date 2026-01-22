@@ -29,7 +29,6 @@ class Job implements Consumer
     public function consume($data)
     {
         $event = $data['event'];
-        dump($event);
         try {
 
             if ($event == 'job_expire') {
