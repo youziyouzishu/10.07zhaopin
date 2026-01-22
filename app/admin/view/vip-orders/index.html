@@ -98,7 +98,7 @@
         <script type="text/html" id="table-bar">
             <button class="pear-btn pear-btn-xs tool-btn" lay-event="edit" permission="admin.viporders.update">编辑</button>
             <button class="pear-btn pear-btn-xs tool-btn" lay-event="remove" permission="admin.viporders.delete">删除</button>
-            <button class="pear-btn pear-btn-xs tool-btn {{ d.status == 1 ? '' : 'layui-hide' }}" lay-event="refund" permission="admin.viporders.refund">退款</button>
+            <button class="pear-btn pear-btn-xs tool-btn {{ d.status == 1 || d.status == 2 ? '' : 'layui-hide' }}" lay-event="refund">退款</button>
         </script>
 
         <script src="/app/admin/component/layui/layui.js?v=2.8.12"></script>
