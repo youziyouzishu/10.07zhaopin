@@ -58,7 +58,7 @@ class VipController extends Base
         ]);
 
         // ------------------ 单次购买 ------------------
-        if (in_array($order->vip_id, [1, 4])) {
+        if (in_array($order->vip_id, [1,2,3,4,5,6])) {
             $result = $gateway->transaction()->sale([
                 'amount' => $order->pay_amount,
                 'paymentMethodNonce' => $nonce,
