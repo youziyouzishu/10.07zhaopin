@@ -98,6 +98,9 @@
         <script type="text/html" id="table-bar">
             <button class="pear-btn pear-btn-xs tool-btn" lay-event="edit" permission="admin.viporders.update">编辑</button>
             <button class="pear-btn pear-btn-xs tool-btn" lay-event="remove" permission="admin.viporders.delete">删除</button>
+            {{# if (d.status == 1 || d.status == 2) { }}
+            <button class="pear-btn pear-btn-xs tool-btn" lay-event="refund" permission="admin.viporders.refund">退款</button>
+            {{# } }}
         </script>
 
         <script src="/app/admin/component/layui/layui.js?v=2.8.12"></script>
@@ -112,6 +115,7 @@
             const SELECT_API = "/admin/vip-orders/select";
             const UPDATE_API = "/admin/vip-orders/update";
             const DELETE_API = "/admin/vip-orders/delete";
+            const REFUND_API = "/admin/vip-orders/refund";
             const INSERT_URL = "/admin/vip-orders/insert";
             const UPDATE_URL = "/admin/vip-orders/update";
 
@@ -190,7 +194,7 @@
                 })
             });
 
-            // 字段 状态:0=待支付,1=已支付 status
+            // 字段 状态:0=待支付,1=已支付,2=已结算,3=结算失败,4=已退款 status
             layui.use(["jquery", "xmSelect"], function() {
                 let value = layui.$("#status").attr("value");
                 let initValue = value ? value.split(",") : [];
@@ -199,7 +203,7 @@
                     name: "status",
                     filterable: true,
                     initValue: initValue,
-                    data: [{"value":"0","name":"待支付"},{"value":"1","name":"已支付"},{"value":"2","name":"已结算"},{"value":"3","name":"结算失败"}],
+                    data: [{"value":"0","name":"待支付"},{"value":"1","name":"已支付"},{"value":"2","name":"已结算"},{"value":"3","name":"结算失败"},{"value":"4","name":"已退款"}],
                     model: {"icon":"hidden","label":{"type":"text"}},
                     clickClose: true,
                     radio: true,
@@ -351,13 +355,15 @@
 				// 获取表格中下拉或树形组件数据
 				let apiResults = {};
                 apiResults['user.type'] = ['求职者','招聘者'];
-				apiResults["status"] = ["待支付","已支付","已结算","结算失败"];
+                apiResults["status"] = ["待支付","已支付","已结算","结算失败","已退款"];
                 // 编辑或删除行事件
                 table.on("tool(data-table)", function(obj) {
                     if (obj.event === "remove") {
                         remove(obj);
                     } else if (obj.event === "edit") {
                         edit(obj);
+                    } else if (obj.event === "refund") {
+                        refund(obj);
                     }
                 });
 
@@ -434,6 +440,32 @@
                         maxmin: true,
                         area: [common.isModile()?"100%":"500px", common.isModile()?"100%":"450px"],
                         content: UPDATE_URL + "?" + PRIMARY_KEY + "=" + value
+                    });
+                }
+
+                let refund = function(obj) {
+                    let value = obj.data[PRIMARY_KEY];
+                    layer.confirm("确定执行退款？", {
+                        icon: 3,
+                        title: "提示"
+                    }, function(index) {
+                        layer.close(index);
+                        let data = {};
+                        data[PRIMARY_KEY] = value;
+                        let loading = layer.load();
+                        $.ajax({
+                            url: REFUND_API,
+                            data: data,
+                            dataType: "json",
+                            type: "post",
+                            success: function(res) {
+                                layer.close(loading);
+                                if (res.code) {
+                                    return layui.popup.failure(res.msg);
+                                }
+                                return layui.popup.success("退款成功", refreshTable);
+                            }
+                        });
                     });
                 }
 

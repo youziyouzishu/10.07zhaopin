@@ -12,7 +12,7 @@ use plugin\admin\app\model\Base;
  * @property int $vip_id VIP
  * @property string $pay_amount 支付金额
  * @property string $ordersn 订单编号
- * @property int $status 状态:0=待支付,1=已支付
+ * @property int $status 状态:0=待支付,1=已支付,2=已结算,3=结算失败
  * @property string $transaction_id 交易ID
  * @property string $subscription_id 订阅ID
  * @property \Illuminate\Support\Carbon|null $created_at 创建时间
