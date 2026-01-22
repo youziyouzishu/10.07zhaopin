@@ -351,7 +351,7 @@
 				// 获取表格中下拉或树形组件数据
 				let apiResults = {};
                 apiResults['user.type'] = ['求职者','招聘者'];
-				apiResults["status"] = ["待支付","已支付"];
+				apiResults["status"] = ["待支付","已支付","已结算","结算失败"];
                 // 编辑或删除行事件
                 table.on("tool(data-table)", function(obj) {
                     if (obj.event === "remove") {
